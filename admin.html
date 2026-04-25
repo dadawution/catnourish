@@ -204,6 +204,11 @@
     <div class="setup-field"><label>GitHub 使用者名稱</label><input type="text" id="cfgOwner" placeholder="dadawution"></div>
     <div class="setup-field"><label>Repository 名稱</label><input type="text" id="cfgRepo" placeholder="catnourish"></div>
     <div class="setup-field"><label>分支</label><input type="text" id="cfgBranch" placeholder="main" value="main"></div>
+    <div class="setup-field">
+      <label>Anthropic API Key（選填，用於 AI 生成文章）</label>
+      <input type="password" id="cfgAnthropicKey" placeholder="sk-ant-xxxxxxxxxxxx">
+      <div class="setup-hint">前往 console.anthropic.com 取得，留空則停用 AI 生成功能</div>
+    </div>
     <div class="setup-err" id="setupErr"></div>
     <button class="btn-setup" id="connectBtn" onclick="connectGitHub()">連線並進入後台</button>
   </div>
@@ -225,6 +230,7 @@
       <button class="tab" onclick="switchTab('list')">所有文章</button>
       <button class="tab" onclick="switchTab('faq')">管理 FAQ</button>
       <button class="tab" onclick="switchTab('photos')">📷 圖庫</button>
+      <button class="tab" onclick="switchTab('settings')">⚙️ 設定</button>
     </div>
 
     <!-- NEW ARTICLE -->
@@ -297,6 +303,33 @@
         <div class="btn-row"><button class="btn btn-primary" id="faqPubBtn" onclick="addFaq()">新增並儲存到 GitHub</button></div>
       </div>
       <div id="faqList"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="form-card">
+        <h2>⚙️ AI 生成設定</h2>
+        <div class="form-group">
+          <label>Anthropic API Key</label>
+          <input type="password" id="settingsApiKey" placeholder="sk-ant-xxxxxxxxxxxx">
+        </div>
+        <div class="form-group">
+          <label>AI 模型選擇</label>
+          <select id="settingsModel">
+            <option value="claude-sonnet-4-20250514">Claude Sonnet（推薦，速度與品質平衡）</option>
+            <option value="claude-opus-4-5-20251101">Claude Opus（最高品質，費用較高）</option>
+            <option value="claude-haiku-4-5-20251001">Claude Haiku（最快速，適合大量生產）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>AI 寫作指令（會加在每次生成的 prompt 前）</label>
+          <textarea id="settingsPrompt" style="min-height:140px" placeholder="例如：請用輕鬆親切的語氣撰寫，像朋友聊天，不要太學術。文章結尾請提醒讀者有任何疑問請諮詢獸醫師。不要提到任何特定品牌名稱。"></textarea>
+        </div>
+        <div class="save-status" id="settingsSaved"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="saveSettings()">儲存設定</button>
+        </div>
+      </div>
     </div>
 
     <!-- PHOTOS -->
@@ -407,6 +440,8 @@ async function connectGitHub(){
     try{const pData=await getFile(PHOTOS_PATH);photos=pData.content;}catch(e){photos=[];}
     localStorage.setItem('bio_cfg',JSON.stringify({owner,repo,branch}));
     localStorage.setItem('bio_token',token);
+    const ak=document.getElementById('cfgAnthropicKey').value.trim();
+    if(ak)localStorage.setItem('bio_anthropic_key',ak);
     enterAdmin();
   }catch(e){showSetupErr('連線失敗：'+e.message);btn.disabled=false;btn.textContent='連線並進入後台';}
 }
@@ -420,6 +455,9 @@ async function tryAutoConnect(){
   document.getElementById('cfgRepo').value=repo;
   document.getElementById('cfgBranch').value=branch;
   cfg={token:savedToken,owner,repo,branch};
+  // restore settings
+  const savedAk=localStorage.getItem('bio_anthropic_key');
+  if(savedAk)document.getElementById('cfgAnthropicKey').value=savedAk;
   try{
     const[aData,fData]=await Promise.all([getFile(ARTICLES_PATH),getFile(FAQS_PATH)]);
     articles=aData.content;faqs=fData.content;
@@ -431,13 +469,13 @@ function enterAdmin(){
   document.getElementById('setupScreen').style.display='none';
   document.getElementById('adminApp').style.display='block';
   document.getElementById('repoLabel').textContent=`${cfg.owner}/${cfg.repo}`;
-  renderArticleList();renderFaqList();renderPhotoGrid();
+  renderArticleList();renderFaqList();renderPhotoGrid();loadSettings();
 }
 function disconnect(){localStorage.removeItem('bio_token');location.reload();}
 
 // ── TABS ──
 function switchTab(name){
-  const names=['new','list','faq','photos'];
+  const names=['new','list','faq','photos','settings'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
@@ -533,7 +571,27 @@ function selectPhoto(url){
 }
 
 // ── AI GENERATE ──
+function getApiKey(){ return localStorage.getItem('bio_anthropic_key')||''; }
+function getModel(){ return localStorage.getItem('bio_model')||'claude-sonnet-4-20250514'; }
+function getCustomPrompt(){ return localStorage.getItem('bio_prompt')||''; }
+
+function loadSettings(){
+  document.getElementById('settingsApiKey').value=getApiKey();
+  document.getElementById('settingsModel').value=getModel();
+  document.getElementById('settingsPrompt').value=getCustomPrompt();
+}
+function saveSettings(){
+  localStorage.setItem('bio_anthropic_key',document.getElementById('settingsApiKey').value.trim());
+  localStorage.setItem('bio_model',document.getElementById('settingsModel').value);
+  localStorage.setItem('bio_prompt',document.getElementById('settingsPrompt').value.trim());
+  setSaveStatus('settingsSaved','ok','✅ 設定已儲存');
+  showToast('✅ 設定已儲存');
+  setTimeout(()=>hideSaveStatus('settingsSaved'),3000);
+}
+
 async function genArticle(){
+  const apiKey=getApiKey();
+  if(!apiKey){alert('請先到「⚙️ 設定」填入 Anthropic API Key');return;}
   const topic=document.getElementById('aTopic').value.trim();
   const tag=document.getElementById('aTag').value;
   const type=document.getElementById('aType').value;
@@ -541,13 +599,20 @@ async function genArticle(){
   const st=document.getElementById('aiSt');
   const btn=document.getElementById('genBtn');
   st.className='ai-status on';document.getElementById('aiStText').textContent='AI 正在生成文章...';btn.disabled=true;
-  const prompt=`你是貓咪照護飲食誌（Cat Nourish Journal）的內容編輯，獨立第三方貓咪飲食照護知識站，不隸屬任何品牌。
+  const customInstr=getCustomPrompt();
+  const prompt=`你是貓咪照護飲食誌（Cat Nourish Journal）的內容編輯，獨立第三方貓咪飲食照護知識站，不隸屬任何品牌。${customInstr?'\n\n額外寫作指令：'+customInstr:''}
+
 請撰寫繁體中文文章：分類：${tag}，類型：${type}，主題：${topic}
 回應純JSON：{"title":"H1標題","excerpt":"100字內摘要","body":"正文600-800字，用##小標題","faq":[{"q":"問","a":"答"},{"q":"問","a":"答"},{"q":"問","a":"答"}],"emoji":"emoji"}
 要求：實用知識感，第三方立場，至少3個##，只回傳JSON`;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser-true':'true'},
+      body:JSON.stringify({model:getModel(),max_tokens:1500,messages:[{role:'user',content:prompt}]})
+    });
     const data=await res.json();
+    if(data.error){throw new Error(data.error.message);}
     const text=data.content.map(i=>i.text||'').join('');
     const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
     document.getElementById('aTitle').value=parsed.title||'';
@@ -555,9 +620,13 @@ async function genArticle(){
     document.getElementById('aBody').value=parsed.body||'';
     document.getElementById('aEmoji').value=parsed.emoji||'📝';
     if(parsed.faq)document.getElementById('aFaq').value=parsed.faq.map(f=>`${f.q}::${f.a}`).join('\n');
+    updatePreview();
     st.className='ai-status on';document.getElementById('aiStText').textContent='✅ 生成完成！請確認內容後發布。';
     setTimeout(()=>{st.className='ai-status';},3500);
-  }catch(e){st.className='ai-status err on';document.getElementById('aiStText').textContent='❌ 生成失敗，請重試';}
+  }catch(e){
+    st.className='ai-status err on';
+    document.getElementById('aiStText').textContent='❌ 生成失敗：'+e.message;
+  }
   btn.disabled=false;
 }
 
