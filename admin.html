@@ -869,7 +869,10 @@ function updatePreview() {
 // ── INSERT IMAGE TO BODY ──
 let pendingImgUrl = '';
 
+let savedCursorPos = -1;
 function openImgPicker() {
+  const ta = document.getElementById('aBody');
+  savedCursorPos = ta.selectionStart !== undefined ? ta.selectionStart : ta.value.length;
   pendingImgUrl = '';
   pickerTarget = '__body__';
   document.getElementById('pickerSearch').value = '';
@@ -898,13 +901,16 @@ function closeCaptionModal() {
 
 function insertImageToBody() {
   const caption = document.getElementById('captionInput').value.trim();
-  const tag = `\n![${caption}](${pendingImgUrl})\n`;
+  const tag = '\n![' + caption + '](' + pendingImgUrl + ')\n';
   const ta = document.getElementById('aBody');
-  const pos = ta.selectionStart || ta.value.length;
+  const pos = (savedCursorPos >= 0) ? savedCursorPos : ta.value.length;
   ta.value = ta.value.slice(0, pos) + tag + ta.value.slice(pos);
+  savedCursorPos = -1;
   closeCaptionModal();
   updatePreview();
   ta.focus();
+  const newPos = pos + tag.length;
+  ta.setSelectionRange(newPos, newPos);
   showToast('✅ 圖片已插入');
 }
 

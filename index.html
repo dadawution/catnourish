@@ -352,6 +352,17 @@
       margin-bottom: 32px; font-size: 0.9rem; color: var(--ink-2); line-height: 1.8;
     }
     .article-summary strong { color: var(--teal); }
+    .article-cover {
+      width: 100%; border-radius: 12px; margin-bottom: 32px;
+      overflow: hidden; background: var(--warm);
+    }
+    .article-cover img {
+      width: 100%; max-height: 420px; object-fit: cover; display: block;
+    }
+    .article-cover-caption {
+      text-align: center; font-size: 0.8rem; color: var(--muted);
+      padding: 8px 16px; background: var(--warm);
+    }
 
     .article-toc {
       background: var(--warm); border-radius: 10px; padding: 20px;
@@ -1072,6 +1083,7 @@ function openArticle(id) {
         <div class="article-meta-item">📌 ${a.type}</div>
       </div>
     </div>
+    ${a.cover ? `<div class="article-cover"><img src="${a.cover}" alt="${a.coverAlt||a.title}" loading="lazy">${a.coverAlt ? `<div class="article-cover-caption">${a.coverAlt}</div>` : ''}</div>` : ''}
     <div class="article-summary"><strong>文章重點：</strong>${a.excerpt}</div>
     ${buildToc(a.body)}
     <div class="article-body">${bodyWithAnchors(a.body)}</div>
