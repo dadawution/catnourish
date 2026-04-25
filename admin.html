@@ -246,7 +246,7 @@
     <!-- NEW ARTICLE -->
     <div class="tab-panel active" id="tab-new">
       <div class="form-card">
-        <h2>✨ AI 輔助文章生成</h2>
+        <h2 id="formModeLabel">✨ AI 輔助文章生成</h2>
         <div class="form-row-2">
           <div class="form-group"><label>文章分類</label><select id="aTag"><option>飲食照護</option><option>熟齡貓照護</option><option>副食與營養</option><option>品牌觀點</option><option>常見問題</option></select></div>
           <div class="form-group"><label>文章類型</label><select id="aType"><option value="問題型">問題型（貓咪XXX怎麼辦？）</option><option value="知識型">知識型（XXX是什麼？）</option><option value="解決方案型">解決方案型（如何選擇XXX）</option></select></div>
@@ -452,7 +452,7 @@
 <script>
 const CLOUD = { name:'dajib0ylm', preset:'catnourish' };
 let cfg = { token:'', owner:'', repo:'', branch:'main' };
-let articles=[], faqs=[], photos=[], pickerTarget=null, deleteTargetId=null;
+let articles=[], faqs=[], photos=[], pickerTarget=null, deleteTargetId=null, editingId=null;
 const ARTICLES_PATH='articles.json', FAQS_PATH='faqs.json', PHOTOS_PATH='photos.json';
 
 // ── GITHUB ──
@@ -724,22 +724,76 @@ async function publishArticle(){
   if(!title||!body){alert('請填寫標題和內容');return;}
   const faqRaw=document.getElementById('aFaq').value.trim();
   const faqParsed=faqRaw?faqRaw.split('\n').filter(l=>l.includes('::')).map(l=>{const[q,...rest]=l.split('::');return{q:q.trim(),a:rest.join('::').trim()};}):[]; 
-  const newArticle={id:Date.now(),tag:document.getElementById('aTag').value,type:document.getElementById('aType').value,title,excerpt:document.getElementById('aExcerpt').value.trim(),cover:document.getElementById('aCover').value.trim(),coverAlt:document.getElementById('aCoverAlt').value.trim(),emoji:document.getElementById('aEmoji').value.trim()||'📝',body,faq:faqParsed,date:new Date().toISOString().slice(0,10)};
-  setSaveStatus('pubStatus','saving','⏳ 儲存到 GitHub 中...');
+  const isEditing=editingId!==null;
+  const articleData={
+    id:isEditing?editingId:Date.now(),
+    tag:document.getElementById('aTag').value,
+    type:document.getElementById('aType').value,
+    title,
+    excerpt:document.getElementById('aExcerpt').value.trim(),
+    cover:document.getElementById('aCover').value.trim(),
+    coverAlt:document.getElementById('aCoverAlt').value.trim(),
+    emoji:document.getElementById('aEmoji').value.trim()||'📝',
+    body,faq:faqParsed,
+    date:isEditing?(articles.find(a=>a.id===editingId)||{}).date||new Date().toISOString().slice(0,10):new Date().toISOString().slice(0,10)
+  };
+  setSaveStatus('pubStatus','saving',isEditing?'⏳ 更新文章中...':'⏳ 儲存到 GitHub 中...');
   document.getElementById('pubBtn').disabled=true;
   try{
     const{sha}=await getFile(ARTICLES_PATH);
-    articles.unshift(newArticle);
-    await putFile(ARTICLES_PATH,articles,sha,`新增文章：${title}`);
+    if(isEditing){
+      const idx=articles.findIndex(a=>a.id===editingId);
+      if(idx>=0)articles[idx]=articleData;
+      else articles.unshift(articleData);
+    }else{
+      articles.unshift(articleData);
+    }
+    await putFile(ARTICLES_PATH,articles,sha,isEditing?`更新文章：${title}`:`新增文章：${title}`);
     clearForm();renderArticleList();
-    setSaveStatus('pubStatus','ok','✅ 發布成功！');showToast('✅ 文章已發布！');
+    const msg=isEditing?'✅ 文章已更新！':'✅ 文章已發布！';
+    setSaveStatus('pubStatus','ok',isEditing?'✅ 更新成功！':'✅ 發布成功！');
+    showToast(msg);
     setTimeout(()=>hideSaveStatus('pubStatus'),4000);
-  }catch(e){setSaveStatus('pubStatus','err','❌ 發布失敗：'+e.message);}
+  }catch(e){setSaveStatus('pubStatus','err','❌ '+(isEditing?'更新':'發布')+'失敗：'+e.message);}
   document.getElementById('pubBtn').disabled=false;
 }
 function clearForm(){
   ['aTopic','aTitle','aExcerpt','aCover','aCoverAlt','aBody','aFaq'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('aEmoji').value='📝';
+  editingId=null;
+  document.getElementById('pubBtn').textContent='📤 發布到 GitHub';
+  document.getElementById('formModeLabel').textContent='✨ AI 輔助文章生成';
+  updatePreview();
+}
+
+// ── EDIT ARTICLE ──
+function editArticle(id){
+  const a=articles.find(x=>x.id===id);
+  if(!a)return;
+  editingId=id;
+  // Fill all form fields
+  document.getElementById('aTag').value=a.tag||'飲食照護';
+  document.getElementById('aType').value=a.type||'知識型';
+  document.getElementById('aTopic').value='';
+  document.getElementById('aTitle').value=a.title||'';
+  document.getElementById('aExcerpt').value=a.excerpt||'';
+  document.getElementById('aCover').value=a.cover||'';
+  document.getElementById('aCoverAlt').value=a.coverAlt||'';
+  document.getElementById('aEmoji').value=a.emoji||'📝';
+  document.getElementById('aBody').value=a.body||'';
+  if(a.faq&&a.faq.length){
+    document.getElementById('aFaq').value=a.faq.map(f=>f.q+'::'+f.a).join('\n');
+  }else{
+    document.getElementById('aFaq').value='';
+  }
+  // Update UI
+  document.getElementById('pubBtn').textContent='✏️ 更新文章';
+  document.getElementById('formModeLabel').textContent='✏️ 編輯文章';
+  updatePreview();
+  // Switch to new tab and scroll to top
+  switchTab('new');
+  window.scrollTo({top:0,behavior:'smooth'});
+  showToast('已載入文章，修改後點「更新文章」儲存');
 }
 
 // ── ARTICLE LIST ──
@@ -756,7 +810,7 @@ function renderArticleList(){
         <div class="item-title">${a.title}</div>
         <div class="item-meta">${a.date} ・ ${a.type}</div>
       </div>
-      <div class="item-actions"><button class="btn-sm btn-del" onclick="openDelModal(${a.id})">刪除</button></div>
+      <div class="item-actions"><button class="btn-sm" style="background:var(--teal-light);color:var(--teal)" onclick="editArticle(${a.id})">編輯</button><button class="btn-sm btn-del" onclick="openDelModal(${a.id})">刪除</button></div>
     </div>`).join('')}</div>`;
 }
 
