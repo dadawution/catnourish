@@ -668,8 +668,7 @@ function buildPromptText(){
   lines.push('  "faq": [{"q": "問題", "a": "回答"}, {"q": "問題", "a": "回答"}],');
   lines.push('  "emoji": "相關emoji"');
   lines.push('}');
-  return lines.join('
-');
+  return lines.join('\n');
 }
 function copyPrompt(){
   saveSettings();
@@ -677,17 +676,8 @@ function copyPrompt(){
   navigator.clipboard.writeText(text).then(()=>showToast('✅ 提示詞已複製！貼到 Claude/ChatGPT/Gemini 即可'));
 }
 function copyJsonFormat(){
-  const fmt='{
-  "title": "文章標題",
-  "excerpt": "100字以內的摘要",
-  "body": "正文，## 大標，### 小標，- 清單",
-  "faq": [
-    {"q": "問題一", "a": "回答一"},
-    {"q": "問題二", "a": "回答二"}
-  ],
-  "emoji": "🐱"
-}';
-  navigator.clipboard.writeText(fmt).then(()=>showToast('✅ JSON 格式已複製'));
+  var fmtLines=['{','  "title": "文章標題",','  "excerpt": "100字以內的摘要",','  "body": "正文，## 大標，### 小標，- 清單",','  "faq": [','    {"q": "問題一", "a": "回答一"},','    {"q": "問題二", "a": "回答二"}','  ],','  "emoji": "🐱"','}'];
+  navigator.clipboard.writeText(fmtLines.join('\n')).then(()=>showToast('✅ JSON 格式已複製'));
 }
 
 // ── JSON PASTE MODAL ──
