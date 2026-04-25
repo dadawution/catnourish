@@ -650,39 +650,26 @@ function buildPromptText(){
   const ending=localStorage.getItem('bio_ending')||'';
   const avoid=localStorage.getItem('bio_avoid')||'';
   const extra=localStorage.getItem('bio_extra')||'';
-  const tag=document.getElementById('aTag')?.value||'飲食照護';
-  const type=document.getElementById('aType')?.value||'知識型';
-  const topic=document.getElementById('aTopic')?.value||'[請填入主題]';
-  let prompt='你是貓咪照護飲食誌（Cat Nourish Journal）的內容編輯，獨立第三方貓咪飲食照護知識站，不隸屬任何品牌。
-
-';
-  if(tone)prompt+=`語氣風格：${tone}
-`;
-  if(audience)prompt+=`目標讀者：${audience}
-`;
-  if(ending)prompt+=`結尾要求：${ending}
-`;
-  if(avoid)prompt+=`請避免：${avoid}
-`;
-  if(extra)prompt+=`補充說明：${extra}
-`;
-  prompt+=`
-請撰寫繁體中文文章：
-- 分類：${tag}
-- 類型：${type}
-- 主題：${topic}
-
-`;
-  prompt+='請只回傳以下 JSON 格式，不要有任何其他說明文字：
-';
-  prompt+='{
-  "title": "H1標題",
-  "excerpt": "100字內摘要",
-  "body": "正文600-800字，用 ## 表示大標，### 表示小標，- 表示清單",
-  "faq": [{"q": "問題", "a": "回答"}, {"q": "問題", "a": "回答"}, {"q": "問題", "a": "回答"}],
-  "emoji": "相關emoji"
-}';
-  return prompt;
+  const tag=document.getElementById('aTag')?document.getElementById('aTag').value:'飲食照護';
+  const type=document.getElementById('aType')?document.getElementById('aType').value:'知識型';
+  const topic=document.getElementById('aTopic')?document.getElementById('aTopic').value:'[請填入主題]';
+  var lines=['你是貓咪照護飲食誌（Cat Nourish Journal）的內容編輯，獨立第三方貓咪飲食照護知識站，不隸屬任何品牌。',''];
+  if(tone)lines.push('語氣風格：'+tone);
+  if(audience)lines.push('目標讀者：'+audience);
+  if(ending)lines.push('結尾要求：'+ending);
+  if(avoid)lines.push('請避免：'+avoid);
+  if(extra)lines.push('補充說明：'+extra);
+  lines.push('','請撰寫繁體中文文章：','- 分類：'+tag,'- 類型：'+type,'- 主題：'+topic,'');
+  lines.push('請只回傳以下 JSON 格式，不要有任何其他說明文字：');
+  lines.push('{');
+  lines.push('  "title": "H1標題",');
+  lines.push('  "excerpt": "100字內摘要",');
+  lines.push('  "body": "正文600-800字，用 ## 表示大標，### 表示小標，- 表示清單",');
+  lines.push('  "faq": [{"q": "問題", "a": "回答"}, {"q": "問題", "a": "回答"}],');
+  lines.push('  "emoji": "相關emoji"');
+  lines.push('}');
+  return lines.join('
+');
 }
 function copyPrompt(){
   saveSettings();
