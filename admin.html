@@ -157,6 +157,39 @@
     .toast{position:fixed;bottom:24px;right:24px;background:var(--sage);color:white;padding:12px 20px;border-radius:8px;font-size:.875rem;transform:translateY(80px);opacity:0;transition:all .3s;z-index:999}
     .toast.show{transform:translateY(0);opacity:1}
 
+    /* EDITOR */
+    .editor-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+    .editor-toolbar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+    .tb-btn{padding:5px 10px;border:1px solid var(--border);background:white;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;color:var(--ink-2);transition:all .15s}
+    .tb-btn:hover{background:var(--teal-light);border-color:var(--teal);color:var(--teal)}
+    .editor-label{font-size:.78rem;font-weight:500;color:var(--ink-2);margin-bottom:5px;display:block}
+    .preview-box{background:var(--warm);border:1px solid var(--border);border-radius:8px;padding:16px;min-height:280px;font-size:.875rem;line-height:1.8;color:var(--ink);overflow-y:auto;max-height:500px}
+    .preview-box h2{font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:700;margin:20px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+    .preview-box h3{font-size:.95rem;font-weight:600;margin:16px 0 8px;color:var(--ink-2)}
+    .preview-box p{margin-bottom:12px}
+    .preview-box li{margin-left:16px;margin-bottom:4px}
+    .preview-box figure{margin:12px 0;text-align:center}
+    .preview-box figure img{max-width:100%;border-radius:6px}
+    .preview-box figcaption{font-size:.75rem;color:var(--muted);margin-top:4px}
+    .preview-box hr{border:none;border-top:1px solid var(--border);margin:16px 0}
+    .preview-empty{color:#ccc;font-size:.82rem}
+    /* DRAG */
+    .drag-handle{cursor:grab;color:#ccc;font-size:1.1rem;padding:0 8px;flex-shrink:0;user-select:none}
+    .drag-handle:active{cursor:grabbing}
+    .admin-item.dragging{opacity:.4;background:var(--teal-light)}
+    .admin-item.drag-over{border-color:var(--teal);border-style:dashed}
+    /* CAPTION MODAL */
+    .caption-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:24px}
+    .caption-modal-overlay.on{display:flex}
+    .caption-modal-box{background:white;border-radius:12px;padding:28px;width:100%;max-width:400px}
+    .caption-modal-box h4{font-family:'Noto Serif TC',serif;font-size:.95rem;margin-bottom:16px}
+    .caption-modal-box input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;font-family:inherit;outline:none;margin-bottom:16px}
+    .caption-modal-box input:focus{border-color:var(--teal)}
+    .caption-btn-row{display:flex;gap:10px}
+    .caption-btn-row button{flex:1;padding:10px;border-radius:8px;border:none;font-size:.875rem;cursor:pointer;font-family:inherit}
+    .btn-caption-ok{background:var(--teal);color:white}
+    .btn-caption-cancel{background:var(--warm);color:var(--ink)}
+    @media(max-width:700px){.editor-wrap{grid-template-columns:1fr}}
     @media(max-width:600px){.form-row-2{grid-template-columns:1fr}.admin-nav{padding:0 16px}.admin-body{padding:0 16px 60px}}
   </style>
 </head>
@@ -216,7 +249,26 @@
         </div>
         <div class="form-group"><label>封面圖片說明（alt，有助 SEO）</label><input type="text" id="aCoverAlt" placeholder="描述圖片內容，例如：老貓躺在陽光下休息"></div>
         <div class="form-group"><label>文章 Emoji（無封面圖時顯示）</label><input type="text" id="aEmoji" placeholder="🐱" style="width:80px"></div>
-        <div class="form-group"><label>文章內容（## 小標題、### 三級標題、- 清單）</label><textarea id="aBody" placeholder="AI 生成後自動填入，或手動撰寫..."></textarea></div>
+        <div class="form-group">
+          <label class="editor-label">文章內容</label>
+          <div class="editor-toolbar">
+            <button class="tb-btn" onclick="tbInsert('## ','')">H2 大標</button>
+            <button class="tb-btn" onclick="tbInsert('### ','')">H3 小標</button>
+            <button class="tb-btn" onclick="tbInsert('- ','')">・清單</button>
+            <button class="tb-btn" onclick="tbInsert('**','**')"><b>粗體</b></button>
+            <button class="tb-btn" onclick="tbInsert('\n---\n','')">— 分隔</button>
+            <button class="tb-btn" onclick="openImgPicker()">📷 插入圖片</button>
+          </div>
+          <div class="editor-wrap">
+            <div>
+              <textarea id="aBody" placeholder="點上方按鈕插入格式，或直接輸入..." oninput="updatePreview()" style="min-height:320px;margin-bottom:0"></textarea>
+            </div>
+            <div>
+              <span class="editor-label">預覽</span>
+              <div class="preview-box" id="bodyPreview"><span class="preview-empty">輸入內容後即時預覽</span></div>
+            </div>
+          </div>
+        </div>
         <div class="form-group"><label>FAQ（每行一組，格式：問題::回答）</label><textarea id="aFaq" style="min-height:100px" placeholder="老貓幾歲開始::通常7歲以上&#10;低磷有效嗎::有助於減少腎臟負擔"></textarea></div>
         <div class="save-status" id="pubStatus"></div>
         <div class="btn-row">
@@ -285,6 +337,18 @@
     <div class="del-btn-row">
       <button class="btn-cancel" onclick="closeDelModal()">取消</button>
       <button class="btn-del-confirm" id="delConfirmBtn" onclick="executeDelete()" disabled>刪除</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAPTION MODAL -->
+<div class="caption-modal-overlay" id="captionModal">
+  <div class="caption-modal-box">
+    <h4>📷 設定圖片說明</h4>
+    <input type="text" id="captionInput" placeholder="圖說文字（可留空）">
+    <div class="caption-btn-row">
+      <button class="btn-caption-cancel" onclick="closeCaptionModal()">取消</button>
+      <button class="btn-caption-ok" onclick="insertImageToBody()">插入圖片</button>
     </div>
   </div>
 </div>
@@ -526,8 +590,11 @@ function clearForm(){
 function renderArticleList(){
   const el=document.getElementById('articleList');
   if(!articles.length){el.innerHTML='<div class="empty-state">還沒有文章</div>';return;}
-  el.innerHTML=`<div class="admin-list">${articles.map(a=>`
-    <div class="admin-item">
+  el.innerHTML=`<div class="admin-list" id="sortableList">${articles.map((a,idx)=>`
+    <div class="admin-item" draggable="true" data-id="${a.id}" data-idx="${idx}"
+      ondragstart="onDragStart(event)" ondragover="onDragOver(event)"
+      ondragleave="onDragLeave(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
+      <div class="drag-handle" title="拖曳排序">☰</div>
       <div class="item-info">
         <span class="item-cat">${a.tag}</span>
         <div class="item-title">${a.title}</div>
@@ -610,6 +677,117 @@ async function deleteFaq(id){
 function setSaveStatus(id,type,msg){const el=document.getElementById(id);el.className=`save-status on ${type}`;el.textContent=msg;}
 function hideSaveStatus(id){document.getElementById(id).className='save-status';}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+// ── EDITOR TOOLBAR ──
+function tbInsert(before, after) {
+  const ta = document.getElementById('aBody');
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const selected = ta.value.slice(start, end);
+  const prefix = (before.startsWith('\n') || start === 0 || ta.value[start-1] === '\n') ? '' : '\n';
+  const insertion = prefix + before + selected + after;
+  ta.value = ta.value.slice(0, start) + insertion + ta.value.slice(end);
+  const cursor = start + insertion.length;
+  ta.setSelectionRange(cursor, cursor);
+  ta.focus();
+  updatePreview();
+}
+
+function updatePreview() {
+  const body = document.getElementById('aBody').value;
+  const prev = document.getElementById('bodyPreview');
+  if (!body.trim()) { prev.innerHTML = '<span class="preview-empty">輸入內容後即時預覽</span>'; return; }
+  const imgRe = /^!\[([^\]]*)\]\(([^)]+)\)$/;
+  prev.innerHTML = body.split('\n').map(line => {
+    if (line.startsWith('## ')) return `<h2>${line.slice(3)}</h2>`;
+    if (line.startsWith('### ')) return `<h3>${line.slice(4)}</h3>`;
+    if (line.startsWith('- ')) return `<li style="margin-left:16px">${line.slice(2)}</li>`;
+    if (line.trim() === '---') return '<hr>';
+    const m = line.match(imgRe);
+    if (m) return `<figure><img src="${m[2]}" style="max-width:100%;border-radius:6px" alt="${m[1]}"><figcaption>${m[1]}</figcaption></figure>`;
+    if (line.trim() === '') return '<br>';
+    const boldLine = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    return `<p>${boldLine}</p>`;
+  }).join('');
+}
+
+// ── INSERT IMAGE TO BODY ──
+let pendingImgUrl = '';
+
+function openImgPicker() {
+  pendingImgUrl = '';
+  pickerTarget = '__body__';
+  document.getElementById('pickerSearch').value = '';
+  renderPickerGrid();
+  document.getElementById('pickerModal').classList.add('on');
+}
+
+function selectPhoto(url) {
+  if (pickerTarget === '__body__') {
+    pendingImgUrl = url;
+    closePicker();
+    document.getElementById('captionInput').value = '';
+    document.getElementById('captionModal').classList.add('on');
+    setTimeout(() => document.getElementById('captionInput').focus(), 100);
+  } else if (pickerTarget) {
+    document.getElementById(pickerTarget).value = url;
+    closePicker();
+    showToast('✅ 圖片已選取');
+  }
+}
+
+function closeCaptionModal() {
+  document.getElementById('captionModal').classList.remove('on');
+  pendingImgUrl = '';
+}
+
+function insertImageToBody() {
+  const caption = document.getElementById('captionInput').value.trim();
+  const tag = `\n![${caption}](${pendingImgUrl})\n`;
+  const ta = document.getElementById('aBody');
+  const pos = ta.selectionStart || ta.value.length;
+  ta.value = ta.value.slice(0, pos) + tag + ta.value.slice(pos);
+  closeCaptionModal();
+  updatePreview();
+  ta.focus();
+  showToast('✅ 圖片已插入');
+}
+
+// ── DRAG TO REORDER ──
+let dragSrcIdx = null;
+
+function onDragStart(e) {
+  dragSrcIdx = parseInt(e.currentTarget.dataset.idx);
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
+
+async function onDrop(e) {
+  e.preventDefault();
+  const target = e.currentTarget;
+  target.classList.remove('drag-over');
+  const dropIdx = parseInt(target.dataset.idx);
+  if (dragSrcIdx === null || dragSrcIdx === dropIdx) return;
+  const moved = articles.splice(dragSrcIdx, 1)[0];
+  articles.splice(dropIdx, 0, moved);
+  dragSrcIdx = null;
+  renderArticleList();
+  setSaveStatus('delStatus', 'saving', '⏳ 儲存排序到 GitHub...');
+  try {
+    const { sha } = await getFile(ARTICLES_PATH);
+    await putFile(ARTICLES_PATH, articles, sha, '更新文章排序');
+    setSaveStatus('delStatus', 'ok', '✅ 排序已儲存');
+    setTimeout(() => hideSaveStatus('delStatus'), 3000);
+  } catch(e) {
+    setSaveStatus('delStatus', 'err', '❌ 儲存失敗：' + e.message);
+  }
+}
 
 tryAutoConnect();
 </script>
