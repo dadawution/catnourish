@@ -93,7 +93,8 @@
     .article-toc a:hover{text-decoration:underline}
 
     /* BODY */
-    .article-body{font-size:1rem;line-height:1.9;color:#2a2018}
+    .article-main{min-width:0;overflow-x:hidden}
+    .article-body{font-size:1rem;line-height:1.9;color:#2a2018;word-break:break-word;overflow-wrap:break-word}
     .article-body h2{font-family:'Noto Serif TC',serif;font-size:1.25rem;font-weight:700;color:var(--ink);margin:36px 0 16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
     .article-body h3{font-size:1.05rem;font-weight:600;color:var(--ink-2);margin:28px 0 12px}
     .article-body p{margin-bottom:18px}
@@ -104,7 +105,7 @@
     .article-body figure img{width:100%;border-radius:10px;display:block}
     .article-body figcaption{text-align:center;font-size:.82rem;color:var(--muted);margin-top:8px;line-height:1.5}
     .article-body hr{border:none;border-top:1px solid var(--border);margin:32px 0}
-    .article-body a{color:var(--teal);text-decoration:underline;text-underline-offset:3px}
+    .article-body a{color:var(--teal);text-decoration:underline;text-underline-offset:3px;max-width:100%;word-break:break-all}
     .article-body a:hover{color:#1f5555}
 
     /* FAQ SECTION */
