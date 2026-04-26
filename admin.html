@@ -1165,7 +1165,7 @@ function updatePreview() {
     const bold = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     return bold.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t, u) => {
       const idx = globalLinkIdx++;
-      return `<a href="#" data-link-idx="${idx}" onclick="handlePreviewLinkClick(event,${idx},'${t.replace(/'/g,"\\'")}','${u.replace(/'/g,"\\'")}'" style="color:var(--teal);text-decoration:underline;cursor:pointer">${t}</a>`;
+      return `<a href="#" data-link-idx="${idx}" onclick="handlePreviewLinkClick(event,${idx})" style="color:var(--teal);text-decoration:underline;cursor:pointer">${t}</a>`;
     });
   }
   prev.innerHTML = body.split('\n').map(line => {
@@ -1270,15 +1270,17 @@ let editingLinkIdx = -1;
 let editingLinkText = '';
 let editingLinkUrl = '';
 
-function handlePreviewLinkClick(e, idx, text, url) {
+function handlePreviewLinkClick(e, idx) {
   e.preventDefault();
   e.stopPropagation();
+  const found = findNthLink(document.getElementById('aBody').value, idx);
+  if (!found) { showToast('找不到連結'); return; }
   editingLinkIdx = idx;
-  editingLinkText = text;
-  editingLinkUrl = url;
-  document.getElementById('linkEditCurrent').textContent = '[' + text + '](' + url + ')';
-  document.getElementById('linkEditText').value = text;
-  document.getElementById('linkEditUrl').value = url;
+  editingLinkText = found.text;
+  editingLinkUrl = found.url;
+  document.getElementById('linkEditCurrent').textContent = '[' + found.text + '](' + found.url + ')';
+  document.getElementById('linkEditText').value = found.text;
+  document.getElementById('linkEditUrl').value = found.url;
   document.getElementById('linkEditModal').classList.add('on');
 }
 
