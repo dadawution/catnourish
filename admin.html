@@ -579,6 +579,12 @@ async function getFile(path){
   const decoded=new TextDecoder('utf-8').decode(Uint8Array.from(atob(data.content.replace(/\n/g,'')),c=>c.charCodeAt(0)));
   return{content:JSON.parse(decoded),sha:data.sha};
 }
+async function getFileSha(path){
+  const res=await ghFetch(path);
+  if(!res.ok)throw new Error('getFileSha failed: '+res.status);
+  const data=await res.json();
+  return data.sha;
+}
 async function putFile(path,content,sha,message){
   const jsonStr=JSON.stringify(content,null,2);
   const encoded=btoa(String.fromCharCode(...new TextEncoder().encode(jsonStr)));
@@ -983,7 +989,7 @@ async function publishArticle(){
     setSaveStatus('pubStatus','saving','⏳ 上傳文章頁面...');
     const htmlPath='articles/'+slug+'.html';
     let htmlSha=null;
-    try{const d=await getFile(htmlPath);htmlSha=d.sha;}catch(e){}
+    try{htmlSha=await getFileSha(htmlPath);}catch(e){}
     const htmlEncoded=btoa(String.fromCharCode(...new TextEncoder().encode(html)));
     async function putArticleHtml(sha){
       const body={message:(isEditing?'更新':'新增')+'文章頁面：'+title,content:htmlEncoded,branch:cfg.branch};
@@ -996,8 +1002,8 @@ async function publishArticle(){
         // If sha wasn't supplied, file exists — fetch sha and retry once
         if(errMsg.includes('sha')&&!sha){
           setSaveStatus('pubStatus','saving','⏳ 重新取得檔案資訊...');
-          const fresh=await getFile(htmlPath);
-          return putArticleHtml(fresh.sha);
+          const freshSha=await getFileSha(htmlPath);
+          return putArticleHtml(freshSha);
         }
         throw new Error(errMsg);
       }
