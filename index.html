@@ -993,8 +993,8 @@ function bodyWithAnchors(body) {
     });
   }
   return body.split('\n').map(line => {
-    if (line.startsWith('## ')) return `<h2 id="sec${i++}">${line.slice(3)}</h2>`;
-    if (line.startsWith('### ')) return `<h3>${line.slice(4)}</h3>`;
+    if (line.startsWith('## ')) return `<h2 id="sec${i++}">${renderLinks(line.slice(3))}</h2>`;
+    if (line.startsWith('### ')) return `<h3>${renderLinks(line.slice(4))}</h3>`;
     if (line.startsWith('- ')) return `<li>${renderLinks(line.slice(2))}</li>`;
     if (line.trim() === '---') return '<hr>';
     const imgM = line.match(imgRe);

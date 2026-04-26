@@ -1160,21 +1160,23 @@ function updatePreview() {
   const prev = document.getElementById('bodyPreview');
   if (!body.trim()) { prev.innerHTML = '<span class="preview-empty">輸入內容後即時預覽</span>'; return; }
   const imgRe = /^!\[([^\]]*)\]\(([^)]+)\)$/;
+  let globalLinkIdx = 0;
+  function renderInline(text) {
+    const bold = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    return bold.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t, u) => {
+      const idx = globalLinkIdx++;
+      return `<a href="#" data-link-idx="${idx}" onclick="handlePreviewLinkClick(event,${idx},'${t.replace(/'/g,"\\'")}','${u.replace(/'/g,"\\'")}'" style="color:var(--teal);text-decoration:underline;cursor:pointer">${t}</a>`;
+    });
+  }
   prev.innerHTML = body.split('\n').map(line => {
-    if (line.startsWith('## ')) return `<h2>${line.slice(3)}</h2>`;
-    if (line.startsWith('### ')) return `<h3>${line.slice(4)}</h3>`;
-    if (line.startsWith('- ')) return `<li style="margin-left:16px">${line.slice(2)}</li>`;
+    if (line.startsWith('## ')) return `<h2>${renderInline(line.slice(3))}</h2>`;
+    if (line.startsWith('### ')) return `<h3>${renderInline(line.slice(4))}</h3>`;
+    if (line.startsWith('- ')) return `<li style="margin-left:16px">${renderInline(line.slice(2))}</li>`;
     if (line.trim() === '---') return '<hr>';
     const m = line.match(imgRe);
     if (m) return `<figure><img src="${m[2]}" style="max-width:100%;border-radius:6px" alt="${m[1]}"><figcaption>${m[1]}</figcaption></figure>`;
     if (line.trim() === '') return '<br>';
-    const boldLine = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    let linkIdx = 0;
-    const linkedLine = boldLine.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m,t,u) => {
-      const idx = linkIdx++;
-      return `<a href="#" data-link-idx="${idx}" data-link-text="${t.replace(/"/g,'&quot;')}" data-link-url="${u.replace(/"/g,'&quot;')}" onclick="handlePreviewLinkClick(event,${idx},'${t.replace(/'/g,"\\'")}','${u.replace(/'/g,"\\'")}'" style="color:var(--teal);text-decoration:underline;cursor:pointer">${t}</a>`;
-    });
-    return `<p>${linkedLine}</p>`;
+    return `<p>${renderInline(line)}</p>`;
   }).join('');
 }
 
