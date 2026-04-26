@@ -257,7 +257,16 @@
           <button class="btn btn-ai" onclick="openJsonModal()">📋 貼入 AI 生成內容</button>
           <span style="font-size:.78rem;color:var(--muted);align-self:center">支援 Claude / ChatGPT / Gemini 輸出格式</span>
         </div>
-        <div class="form-group"><label>文章標題（H1）</label><input type="text" id="aTitle" placeholder="自動填入或手動輸入"></div>
+        <div class="form-group"><label>文章標題（H1）</label><input type="text" id="aTitle" placeholder="自動填入或手動輸入" oninput="autoFillSlug()"></div>
+        <div class="form-group">
+          <label>網址 Slug（自動產生，可自訂）</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:.78rem;color:var(--muted);white-space:nowrap">/articles/</span>
+            <input type="text" id="aSlug" placeholder="senior-cat-low-phosphorus-diet" style="font-family:monospace;font-size:.85rem" oninput="cleanSlug()">
+            <span style="font-size:.78rem;color:var(--muted);white-space:nowrap">.html</span>
+          </div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:4px">只能用英文小寫、數字、連字號。發布後盡量不要更改。</div>
+        </div>
         <div class="form-group"><label>文章摘要（100字以內）</label><input type="text" id="aExcerpt" placeholder="一句話說明文章重點"></div>
         <div class="form-group">
           <label>封面圖片</label>
@@ -680,6 +689,22 @@ function copyJsonFormat(){
   navigator.clipboard.writeText(fmtLines.join('\n')).then(()=>showToast('✅ JSON 格式已複製'));
 }
 
+// ── SLUG HELPERS ──
+function autoFillSlug(){
+  const slug=document.getElementById('aSlug').value;
+  // Only auto-fill if slug is empty or was previously auto-generated
+  if(!slug||document.getElementById('aSlug').dataset.auto==='true'){
+    const title=document.getElementById('aTitle').value;
+    document.getElementById('aSlug').value=generateSlug(title);
+    document.getElementById('aSlug').dataset.auto='true';
+  }
+}
+function cleanSlug(){
+  const el=document.getElementById('aSlug');
+  el.dataset.auto='false'; // user is manually editing
+  el.value=el.value.toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-');
+}
+
 // ── JSON PASTE MODAL ──
 function openJsonModal(){
   document.getElementById('jsonPasteArea').value='';
@@ -701,6 +726,7 @@ function parseAndFill(){
     const parsed=JSON.parse(cleaned);
     if(!parsed.title&&!parsed.body){ errEl.textContent='找不到必要欄位（title、body），請確認格式正確'; errEl.className='json-parse-err on'; return; }
     document.getElementById('aTitle').value=parsed.title||'';
+    if(parsed.title){document.getElementById('aSlug').value=generateSlug(parsed.title||'');document.getElementById('aSlug').dataset.auto='true';}
     document.getElementById('aExcerpt').value=parsed.excerpt||'';
     document.getElementById('aBody').value=parsed.body||'';
     document.getElementById('aEmoji').value=parsed.emoji||'📝';
@@ -836,7 +862,7 @@ async function publishArticle(){
     emoji:document.getElementById('aEmoji').value.trim()||'📝',
     body,faq:faqParsed,
     date:isEditing?(existingArticle||{}).date||new Date().toISOString().slice(0,10):new Date().toISOString().slice(0,10),
-    slug:existingSlug||generateSlug(title)
+    slug:(document.getElementById('aSlug').value.trim()||existingSlug||generateSlug(title)).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'')||generateSlug(title)
   };
   setSaveStatus('pubStatus','saving',isEditing?'⏳ 更新文章中...':'⏳ 產生文章頁面中...');
   document.getElementById('pubBtn').disabled=true;
@@ -878,7 +904,7 @@ async function publishArticle(){
   document.getElementById('pubBtn').disabled=false;
 }
 function clearForm(){
-  ['aTopic','aTitle','aExcerpt','aCover','aCoverAlt','aBody','aFaq'].forEach(id=>document.getElementById(id).value='');
+  ['aTopic','aTitle','aSlug','aExcerpt','aCover','aCoverAlt','aBody','aFaq'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('aEmoji').value='📝';
   editingId=null;
   document.getElementById('pubBtn').textContent='📤 發布到 GitHub';
@@ -896,6 +922,7 @@ function editArticle(id){
   document.getElementById('aType').value=a.type||'知識型';
   document.getElementById('aTopic').value='';
   document.getElementById('aTitle').value=a.title||'';
+  document.getElementById('aSlug').value=a.slug||'';
   document.getElementById('aExcerpt').value=a.excerpt||'';
   document.getElementById('aCover').value=a.cover||'';
   document.getElementById('aCoverAlt').value=a.coverAlt||'';
