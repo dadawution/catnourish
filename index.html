@@ -985,15 +985,23 @@ function buildToc(body) {
 function bodyWithAnchors(body) {
   let i = 0;
   const imgRe = /^!\[([^\]]*)\]\(([^)]+)\)$/;
+  const linkRe = /\[([^\]]+)\]\(([^)]+)\)/g;
+  function renderLinks(text) {
+    return text.replace(linkRe, (m, t, u) => {
+      const isInternal = u.startsWith('../') || u.startsWith('./') || u.startsWith('/');
+      return `<a href="${u}"${isInternal ? '' : ' target="_blank" rel="noopener noreferrer"'}>${t}</a>`;
+    });
+  }
   return body.split('\n').map(line => {
     if (line.startsWith('## ')) return `<h2 id="sec${i++}">${line.slice(3)}</h2>`;
     if (line.startsWith('### ')) return `<h3>${line.slice(4)}</h3>`;
-    if (line.startsWith('- ')) return `<li>${line.slice(2)}</li>`;
+    if (line.startsWith('- ')) return `<li>${renderLinks(line.slice(2))}</li>`;
     if (line.trim() === '---') return '<hr>';
     const imgM = line.match(imgRe);
     if (imgM) return `<figure><img src="${imgM[2]}" alt="${imgM[1]}" loading="lazy">${imgM[1] ? `<figcaption>${imgM[1]}</figcaption>` : ''}</figure>`;
     if (line.trim() === '') return '';
-    return `<p>${line}</p>`;
+    const bold = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    return `<p>${renderLinks(bold)}</p>`;
   }).join('');
 }
 function articleCardHTML(a) {

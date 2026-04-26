@@ -193,6 +193,22 @@
     .json-btn-row button{flex:1;padding:10px;border-radius:8px;border:none;font-size:.875rem;cursor:pointer;font-family:inherit}
     .btn-json-ok{background:var(--teal);color:white}
     .btn-json-cancel{background:var(--warm);color:var(--ink)}
+    /* LINK MODAL */
+    .link-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:24px}
+    .link-modal-overlay.on{display:flex}
+    .link-modal-box{background:white;border-radius:16px;width:100%;max-width:480px;padding:32px}
+    .link-modal-box h4{font-family:"Noto Serif TC",serif;font-size:1rem;margin-bottom:20px}
+    .link-modal-box label{display:block;font-size:.78rem;font-weight:500;color:var(--ink-2);margin-bottom:5px}
+    .link-modal-box input,.link-modal-box select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;font-family:inherit;outline:none;margin-bottom:14px;color:var(--ink);background:var(--cream)}
+    .link-modal-box input:focus,.link-modal-box select:focus{border-color:var(--teal);background:white}
+    .link-modal-divider{text-align:center;font-size:.75rem;color:var(--muted);margin-bottom:14px;position:relative}
+    .link-modal-divider::before,.link-modal-divider::after{content:"";position:absolute;top:50%;width:42%;height:1px;background:var(--border)}
+    .link-modal-divider::before{left:0}
+    .link-modal-divider::after{right:0}
+    .link-btn-row{display:flex;gap:10px;margin-top:4px}
+    .link-btn-row button{flex:1;padding:10px;border-radius:8px;border:none;font-size:.875rem;cursor:pointer;font-family:inherit}
+    .btn-link-ok{background:var(--teal);color:white}
+    .btn-link-cancel{background:var(--warm);color:var(--ink)}
     /* CAPTION MODAL */
     .caption-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:24px}
     .caption-modal-overlay.on{display:flex}
@@ -286,6 +302,7 @@
             <button class="tb-btn" onclick="tbInsert('**','**')"><b>粗體</b></button>
             <button class="tb-btn" onclick="tbInsert('\n---\n','')">— 分隔</button>
             <button class="tb-btn" onclick="openImgPicker()">📷 插入圖片</button>
+            <button class="tb-btn" onclick="openLinkModal()">🔗 插入連結</button>
           </div>
           <div class="editor-wrap">
             <div>
@@ -440,6 +457,26 @@
     <div class="json-btn-row">
       <button class="btn-json-cancel" onclick="closeJsonModal()">取消</button>
       <button class="btn-json-ok" onclick="parseAndFill()">解析並填入欄位</button>
+    </div>
+  </div>
+</div>
+
+<!-- LINK MODAL -->
+<div class="link-modal-overlay" id="linkModal">
+  <div class="link-modal-box">
+    <h4>🔗 插入連結</h4>
+    <label>連結文字</label>
+    <input type="text" id="linkText" placeholder="顯示的文字">
+    <label>站內文章（選擇後自動帶入網址）</label>
+    <select id="linkArticleSelect" onchange="fillArticleUrl()">
+      <option value="">— 選擇站內文章 —</option>
+    </select>
+    <div class="link-modal-divider">或手動輸入網址</div>
+    <label>網址</label>
+    <input type="text" id="linkUrl" placeholder="https://example.com">
+    <div class="link-btn-row">
+      <button class="btn-link-cancel" onclick="closeLinkModal()">取消</button>
+      <button class="btn-link-ok" onclick="insertLink()">插入連結</button>
     </div>
   </div>
 </div>
@@ -783,7 +820,11 @@ function renderBodyHtml(body){
     if(m)return`<figure><img src="${m[2]}" alt="${m[1]}" loading="lazy">${m[1]?`<figcaption>${m[1]}</figcaption>`:''}</figure>`;
     if(line.trim()==='')return'';
     const bold=line.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
-    return`<p>${bold}</p>`;
+    const linked=bold.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,t,u)=>{
+      const isInt=u.startsWith('../')||u.startsWith('./')||u.startsWith('/');
+      return`<a href="${u}"${isInt?'':' target="_blank" rel="noopener noreferrer"'}>${t}</a>`;
+    });
+    return`<p>${linked}</p>`;
   }).join('\n');
 }
 
@@ -1063,7 +1104,8 @@ function updatePreview() {
     if (m) return `<figure><img src="${m[2]}" style="max-width:100%;border-radius:6px" alt="${m[1]}"><figcaption>${m[1]}</figcaption></figure>`;
     if (line.trim() === '') return '<br>';
     const boldLine = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    return `<p>${boldLine}</p>`;
+    const linkedLine = boldLine.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:var(--teal);text-decoration:underline">$1</a>');
+    return `<p>${linkedLine}</p>`;
   }).join('');
 }
 
@@ -1150,6 +1192,56 @@ async function onDrop(e) {
   } catch(e) {
     setSaveStatus('delStatus', 'err', '❌ 儲存失敗：' + e.message);
   }
+}
+
+// ── LINK INSERT ──
+let savedLinkCursor = { start: 0, end: 0 };
+
+function openLinkModal() {
+  const ta = document.getElementById('aBody');
+  savedLinkCursor = { start: ta.selectionStart, end: ta.selectionEnd };
+  const selectedText = ta.value.slice(savedLinkCursor.start, savedLinkCursor.end);
+  document.getElementById('linkText').value = selectedText;
+  document.getElementById('linkUrl').value = '';
+  // Populate article select
+  const sel = document.getElementById('linkArticleSelect');
+  sel.innerHTML = '<option value="">— 選擇站內文章 —</option>';
+  articles.forEach(a => {
+    if(a.slug) {
+      const opt = document.createElement('option');
+      opt.value = '../articles/' + a.slug + '.html';
+      opt.textContent = a.title;
+      sel.appendChild(opt);
+    }
+  });
+  document.getElementById('linkModal').classList.add('on');
+  setTimeout(() => document.getElementById('linkText').focus(), 100);
+}
+
+function closeLinkModal() {
+  document.getElementById('linkModal').classList.remove('on');
+}
+
+function fillArticleUrl() {
+  const val = document.getElementById('linkArticleSelect').value;
+  if(val) document.getElementById('linkUrl').value = val;
+}
+
+function insertLink() {
+  const text = document.getElementById('linkText').value.trim();
+  const url = document.getElementById('linkUrl').value.trim();
+  if(!url) { alert('請輸入網址'); return; }
+  const displayText = text || url;
+  const tag = '[' + displayText + '](' + url + ')';
+  const ta = document.getElementById('aBody');
+  const { start, end } = savedLinkCursor;
+  ta.value = ta.value.slice(0, start) + tag + ta.value.slice(end);
+  closeLinkModal();
+  updatePreview();
+  ta.focus();
+  const newPos = start + tag.length;
+  ta.setSelectionRange(newPos, newPos);
+  showToast('✅ 連結已插入');
 }
 
 tryAutoConnect();
