@@ -882,20 +882,22 @@ function generateSlug(title){
 function renderBodyHtml(body){
   let i=0;
   const imgRe=/^!\[([^\]]*)\]\(([^)]+)\)$/;
+  function renderInline(text){
+    const bold=text.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+    return bold.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,t,u)=>{
+      const isInt=u.startsWith('../')||u.startsWith('./')||u.startsWith('/');
+      return`<a href="${u}"${isInt?'':' target="_blank" rel="noopener noreferrer"'}>${t}</a>`;
+    });
+  }
   return body.split('\n').map(line=>{
-    if(line.startsWith('## '))return`<h2 id="sec${i++}">${line.slice(3)}</h2>`;
-    if(line.startsWith('### '))return`<h3>${line.slice(4)}</h3>`;
-    if(line.startsWith('- '))return`<li>${line.slice(2)}</li>`;
+    if(line.startsWith('## '))return`<h2 id="sec${i++}">${renderInline(line.slice(3))}</h2>`;
+    if(line.startsWith('### '))return`<h3>${renderInline(line.slice(4))}</h3>`;
+    if(line.startsWith('- '))return`<li>${renderInline(line.slice(2))}</li>`;
     if(line.trim()==='---')return'<hr>';
     const m=line.match(imgRe);
     if(m)return`<figure><img src="${m[2]}" alt="${m[1]}" loading="lazy">${m[1]?`<figcaption>${m[1]}</figcaption>`:''}</figure>`;
     if(line.trim()==='')return'';
-    const bold=line.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
-    const linked=bold.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,t,u)=>{
-      const isInt=u.startsWith('../')||u.startsWith('./')||u.startsWith('/');
-      return`<a href="${u}"${isInt?'':' target="_blank" rel="noopener noreferrer"'}>${t}</a>`;
-    });
-    return`<p>${linked}</p>`;
+    return`<p>${renderInline(line)}</p>`;
   }).join('\n');
 }
 
