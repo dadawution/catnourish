@@ -47,6 +47,7 @@
       --amber:#c47c2e;--amber-light:#fdf0e0;--sage:#5a7a5a;--sage-light:#eaf2ea;
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{overflow-x:hidden;width:100%;}
     body{background:var(--cream);color:var(--ink);font-family:'Noto Sans TC',sans-serif;font-size:15px;line-height:1.7}
 
     /* NAV */
@@ -92,7 +93,8 @@
     .article-toc a:hover{text-decoration:underline}
 
     /* BODY */
-    .article-body{font-size:1rem;line-height:1.9;color:#2a2018}
+    .article-main{min-width:0;overflow-x:hidden}
+    .article-body{font-size:1rem;line-height:1.9;color:#2a2018;word-break:break-word;overflow-wrap:break-word}
     .article-body h2{font-family:'Noto Serif TC',serif;font-size:1.25rem;font-weight:700;color:var(--ink);margin:36px 0 16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
     .article-body h3{font-size:1.05rem;font-weight:600;color:var(--ink-2);margin:28px 0 12px}
     .article-body p{margin-bottom:18px}
@@ -103,6 +105,8 @@
     .article-body figure img{width:100%;border-radius:10px;display:block}
     .article-body figcaption{text-align:center;font-size:.82rem;color:var(--muted);margin-top:8px;line-height:1.5}
     .article-body hr{border:none;border-top:1px solid var(--border);margin:32px 0}
+    .article-body a{color:var(--teal);text-decoration:underline;text-underline-offset:3px;max-width:100%;word-break:break-all}
+    .article-body a:hover{color:#1f5555}
 
     /* FAQ SECTION */
     .article-faq-section{margin-top:48px;padding-top:36px;border-top:2px solid var(--border)}
@@ -206,7 +210,7 @@
 
 <h2 id="sec0">降低戒心：餵藥前的情緒放鬆與環境準備</h2>
 
-<p>貓咪是極度敏感的動物，當察覺到飼主異常緊張，或是看到平常不會出現的藥袋時，就會立刻進入警戒狀態。</p>
+<p><a href="https://kaijuzine.com/index.html" target="_blank" rel="noopener noreferrer">貓咪是極度敏感的動物</a>，當察覺到飼主異常緊張，或是看到平常不會出現的藥袋時，就會立刻進入警戒狀態。</p>
 <li>維持平常心：飼主的情緒會直接傳染給貓咪。餵藥前請務必深呼吸保持平常心，動作保持輕柔，千萬不要用「抓捕」的方式逼迫貓咪就範。</li>
 <li>營造安心環境：選擇貓咪習慣、安靜且無法輕易逃脫的空間進行。可以先用平穩的語氣和牠說話，輕撫頭部與下巴，讓貓咪在放鬆的狀態下準備開始。</li>
 
