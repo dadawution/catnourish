@@ -209,6 +209,33 @@
     .link-btn-row button{flex:1;padding:10px;border-radius:8px;border:none;font-size:.875rem;cursor:pointer;font-family:inherit}
     .btn-link-ok{background:var(--teal);color:white}
     .btn-link-cancel{background:var(--warm);color:var(--ink)}
+    /* LINK EDIT MODAL */
+    .link-edit-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;align-items:center;justify-content:center;padding:24px}
+    .link-edit-overlay.on{display:flex}
+    .link-edit-box{background:white;border-radius:16px;width:100%;max-width:440px;padding:28px}
+    .link-edit-box h4{font-family:"Noto Serif TC",serif;font-size:1rem;margin-bottom:6px}
+    .link-edit-current{font-size:.75rem;color:var(--muted);margin-bottom:20px;word-break:break-all;line-height:1.5}
+    .link-edit-box label{display:block;font-size:.78rem;font-weight:500;color:var(--ink-2);margin-bottom:5px}
+    .link-edit-box input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;font-family:inherit;outline:none;margin-bottom:14px;background:var(--cream)}
+    .link-edit-box input:focus{border-color:var(--teal);background:white}
+    .link-edit-actions{display:flex;flex-direction:column;gap:8px}
+    .btn-link-update{width:100%;padding:10px;background:var(--teal);color:white;border:none;border-radius:8px;font-size:.875rem;cursor:pointer;font-family:inherit}
+    .btn-link-remove{width:100%;padding:10px;background:var(--red-light);color:var(--red);border:none;border-radius:8px;font-size:.875rem;cursor:pointer;font-family:inherit}
+    .btn-link-close{width:100%;padding:10px;background:var(--warm);color:var(--ink);border:none;border-radius:8px;font-size:.875rem;cursor:pointer;font-family:inherit}
+    /* BATCH REPLACE MODAL */
+    .batch-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;align-items:center;justify-content:center;padding:24px}
+    .batch-modal-overlay.on{display:flex}
+    .batch-modal-box{background:white;border-radius:16px;width:100%;max-width:480px;padding:28px}
+    .batch-modal-box h4{font-family:"Noto Serif TC",serif;font-size:1rem;margin-bottom:20px}
+    .batch-modal-box label{display:block;font-size:.78rem;font-weight:500;color:var(--ink-2);margin-bottom:5px}
+    .batch-modal-box input,.batch-modal-box select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;font-family:inherit;outline:none;margin-bottom:14px;background:var(--cream);color:var(--ink)}
+    .batch-modal-box input:focus,.batch-modal-box select:focus{border-color:var(--teal);background:white}
+    .batch-result{font-size:.8rem;color:var(--sage);margin-bottom:12px;display:none}
+    .batch-result.on{display:block}
+    .batch-btn-row{display:flex;gap:10px}
+    .batch-btn-row button{flex:1;padding:10px;border-radius:8px;border:none;font-size:.875rem;cursor:pointer;font-family:inherit}
+    .btn-batch-ok{background:var(--teal);color:white}
+    .btn-batch-cancel{background:var(--warm);color:var(--ink)}
     /* CAPTION MODAL */
     .caption-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:24px}
     .caption-modal-overlay.on{display:flex}
@@ -303,6 +330,7 @@
             <button class="tb-btn" onclick="tbInsert('\n---\n','')">— 分隔</button>
             <button class="tb-btn" onclick="openImgPicker()">📷 插入圖片</button>
             <button class="tb-btn" onclick="openLinkModal()">🔗 插入連結</button>
+            <button class="tb-btn" onclick="openBatchModal()">🔄 批次替換連結</button>
           </div>
           <div class="editor-wrap">
             <div>
@@ -477,6 +505,43 @@
     <div class="link-btn-row">
       <button class="btn-link-cancel" onclick="closeLinkModal()">取消</button>
       <button class="btn-link-ok" onclick="insertLink()">插入連結</button>
+    </div>
+  </div>
+</div>
+
+<!-- LINK EDIT MODAL -->
+<div class="link-edit-overlay" id="linkEditModal">
+  <div class="link-edit-box">
+    <h4>🔗 編輯連結</h4>
+    <div class="link-edit-current" id="linkEditCurrent"></div>
+    <label>連結文字</label>
+    <input type="text" id="linkEditText" placeholder="顯示的文字">
+    <label>網址</label>
+    <input type="text" id="linkEditUrl" placeholder="https://example.com">
+    <div class="link-edit-actions">
+      <button class="btn-link-update" onclick="updateLink()">✅ 更新連結</button>
+      <button class="btn-link-remove" onclick="removeLink()">🗑 移除連結（保留文字）</button>
+      <button class="btn-link-close" onclick="closeLinkEditModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- BATCH REPLACE MODAL -->
+<div class="batch-modal-overlay" id="batchModal">
+  <div class="batch-modal-box">
+    <h4>🔄 批次替換連結</h4>
+    <label>選擇現有連結（或手動輸入舊網址）</label>
+    <select id="batchLinkSelect" onchange="fillBatchOldUrl()">
+      <option value="">— 選擇現有連結 —</option>
+    </select>
+    <label>舊網址</label>
+    <input type="text" id="batchOldUrl" placeholder="要被替換的網址">
+    <label>新網址</label>
+    <input type="text" id="batchNewUrl" placeholder="替換成這個網址">
+    <div class="batch-result" id="batchResult"></div>
+    <div class="batch-btn-row">
+      <button class="btn-batch-cancel" onclick="closeBatchModal()">取消</button>
+      <button class="btn-batch-ok" onclick="executeBatchReplace()">全部替換</button>
     </div>
   </div>
 </div>
@@ -1104,7 +1169,11 @@ function updatePreview() {
     if (m) return `<figure><img src="${m[2]}" style="max-width:100%;border-radius:6px" alt="${m[1]}"><figcaption>${m[1]}</figcaption></figure>`;
     if (line.trim() === '') return '<br>';
     const boldLine = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    const linkedLine = boldLine.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:var(--teal);text-decoration:underline">$1</a>');
+    let linkIdx = 0;
+    const linkedLine = boldLine.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m,t,u) => {
+      const idx = linkIdx++;
+      return `<a href="#" data-link-idx="${idx}" data-link-text="${t.replace(/"/g,'&quot;')}" data-link-url="${u.replace(/"/g,'&quot;')}" onclick="handlePreviewLinkClick(event,${idx},'${t.replace(/'/g,"\\'")}','${u.replace(/'/g,"\\'")}'" style="color:var(--teal);text-decoration:underline;cursor:pointer">${t}</a>`;
+    });
     return `<p>${linkedLine}</p>`;
   }).join('');
 }
@@ -1192,6 +1261,111 @@ async function onDrop(e) {
   } catch(e) {
     setSaveStatus('delStatus', 'err', '❌ 儲存失敗：' + e.message);
   }
+}
+
+// ── LINK EDIT (PREVIEW CLICK) ──
+let editingLinkIdx = -1;
+let editingLinkText = '';
+let editingLinkUrl = '';
+
+function handlePreviewLinkClick(e, idx, text, url) {
+  e.preventDefault();
+  e.stopPropagation();
+  editingLinkIdx = idx;
+  editingLinkText = text;
+  editingLinkUrl = url;
+  document.getElementById('linkEditCurrent').textContent = '[' + text + '](' + url + ')';
+  document.getElementById('linkEditText').value = text;
+  document.getElementById('linkEditUrl').value = url;
+  document.getElementById('linkEditModal').classList.add('on');
+}
+
+function closeLinkEditModal() {
+  document.getElementById('linkEditModal').classList.remove('on');
+  editingLinkIdx = -1;
+}
+
+function findNthLink(body, idx) {
+  const re = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let match, count = 0;
+  while ((match = re.exec(body)) !== null) {
+    if (count === idx) return { start: match.index, end: match.index + match[0].length, text: match[1], url: match[2] };
+    count++;
+  }
+  return null;
+}
+
+function updateLink() {
+  const newText = document.getElementById('linkEditText').value.trim();
+  const newUrl = document.getElementById('linkEditUrl').value.trim();
+  if (!newUrl) { alert('請填入網址'); return; }
+  const ta = document.getElementById('aBody');
+  const found = findNthLink(ta.value, editingLinkIdx);
+  if (!found) { showToast('找不到連結，請重試'); closeLinkEditModal(); return; }
+  const replacement = '[' + (newText || found.text) + '](' + newUrl + ')';
+  ta.value = ta.value.slice(0, found.start) + replacement + ta.value.slice(found.end);
+  closeLinkEditModal();
+  updatePreview();
+  showToast('✅ 連結已更新');
+}
+
+function removeLink() {
+  const ta = document.getElementById('aBody');
+  const found = findNthLink(ta.value, editingLinkIdx);
+  if (!found) { showToast('找不到連結，請重試'); closeLinkEditModal(); return; }
+  ta.value = ta.value.slice(0, found.start) + found.text + ta.value.slice(found.end);
+  closeLinkEditModal();
+  updatePreview();
+  showToast('✅ 連結已移除，文字保留');
+}
+
+// ── BATCH REPLACE ──
+function openBatchModal() {
+  const ta = document.getElementById('aBody');
+  const re = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const sel = document.getElementById('batchLinkSelect');
+  sel.innerHTML = '<option value="">— 選擇現有連結 —</option>';
+  const seen = new Set();
+  let match;
+  while ((match = re.exec(ta.value)) !== null) {
+    if (!seen.has(match[2])) {
+      seen.add(match[2]);
+      const opt = document.createElement('option');
+      opt.value = match[2];
+      opt.textContent = match[1] + ' → ' + match[2].slice(0, 40) + (match[2].length > 40 ? '...' : '');
+      sel.appendChild(opt);
+    }
+  }
+  document.getElementById('batchOldUrl').value = '';
+  document.getElementById('batchNewUrl').value = '';
+  document.getElementById('batchResult').className = 'batch-result';
+  document.getElementById('batchModal').classList.add('on');
+}
+
+function closeBatchModal() { document.getElementById('batchModal').classList.remove('on'); }
+
+function fillBatchOldUrl() {
+  const val = document.getElementById('batchLinkSelect').value;
+  if (val) document.getElementById('batchOldUrl').value = val;
+}
+
+function executeBatchReplace() {
+  const oldUrl = document.getElementById('batchOldUrl').value.trim();
+  const newUrl = document.getElementById('batchNewUrl').value.trim();
+  if (!oldUrl || !newUrl) { alert('請填寫舊網址和新網址'); return; }
+  const ta = document.getElementById('aBody');
+  const re = new RegExp('\\[([^\\]]+)\\]\\(' + oldUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\)', 'g');
+  let count = 0;
+  const newBody = ta.value.replace(re, (m, t) => { count++; return '[' + t + '](' + newUrl + ')'; });
+  if (count === 0) {
+    document.getElementById('batchResult').textContent = '找不到符合的連結';
+    document.getElementById('batchResult').className = 'batch-result on';
+    return;
+  }
+  ta.value = newBody;
+  updatePreview();
+  closeBatchModal();
+  showToast('✅ 已替換 ' + count + ' 個連結');
 }
 
 // ── LINK INSERT ──
