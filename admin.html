@@ -985,10 +985,23 @@ async function publishArticle(){
     let htmlSha=null;
     try{const d=await getFile(htmlPath);htmlSha=d.sha;}catch(e){}
     const htmlEncoded=btoa(String.fromCharCode(...new TextEncoder().encode(html)));
-    const htmlBody={message:(isEditing?'更新':'新增')+'文章頁面：'+title,content:htmlEncoded,branch:cfg.branch};
-    if(htmlSha)htmlBody.sha=htmlSha;
-    const htmlRes=await ghFetch(htmlPath,{method:'PUT',body:JSON.stringify(htmlBody)});
-    if(!htmlRes.ok){const e=await htmlRes.json();throw new Error(e.message);}
+    async function putArticleHtml(sha){
+      const body={message:(isEditing?'更新':'新增')+'文章頁面：'+title,content:htmlEncoded,branch:cfg.branch};
+      if(sha)body.sha=sha;
+      const res=await ghFetch(htmlPath,{method:'PUT',body:JSON.stringify(body)});
+      if(!res.ok){
+        const err=await res.json();
+        // If sha wasn't supplied, file exists — fetch sha and retry once
+        if(err.message&&err.message.includes('sha')&&!sha){
+          setSaveStatus('pubStatus','saving','⏳ 重新取得檔案資訊...');
+          const fresh=await getFile(htmlPath);
+          return putArticleHtml(fresh.sha);
+        }
+        throw new Error(err.message);
+      }
+      return res;
+    }
+    await putArticleHtml(htmlSha);
 
     // 3. Update articles.json
     setSaveStatus('pubStatus','saving','⏳ 更新文章索引...');
