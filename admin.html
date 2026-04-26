@@ -990,14 +990,16 @@ async function publishArticle(){
       if(sha)body.sha=sha;
       const res=await ghFetch(htmlPath,{method:'PUT',body:JSON.stringify(body)});
       if(!res.ok){
-        const err=await res.json();
+        const rawText=await res.text();
+        let errMsg=rawText;
+        try{const parsed=JSON.parse(rawText);errMsg=parsed.message||rawText;}catch(e){}
         // If sha wasn't supplied, file exists — fetch sha and retry once
-        if(err.message&&err.message.includes('sha')&&!sha){
+        if(errMsg.includes('sha')&&!sha){
           setSaveStatus('pubStatus','saving','⏳ 重新取得檔案資訊...');
           const fresh=await getFile(htmlPath);
           return putArticleHtml(fresh.sha);
         }
-        throw new Error(err.message);
+        throw new Error(errMsg);
       }
       return res;
     }
