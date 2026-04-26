@@ -718,6 +718,104 @@ function parseAndFill(){
 }
 
 // ── PUBLISH ──
+// ── SLUG & HTML GENERATION ──
+function generateSlug(title){
+  // Simple transliteration map for common Chinese pet/cat terms
+  const map = {
+    '貓':'cat','咪':'mi','老':'senior','貓咪':'cat','飲食':'diet',
+    '照護':'care','低磷':'low-phosphorus','低鈉':'low-sodium','腎':'kidney',
+    '病':'disease','水':'water','喝水':'drinking-water','食慾':'appetite',
+    '不吃':'not-eating','飯':'meal','肉泥':'puree','副食':'supplement',
+    '機能':'functional','營養':'nutrition','熟齡':'senior-age',
+    '選擇':'choose','方式':'method','原因':'causes','影響':'effects',
+    '重要':'important','需要':'need','為什麼':'why','怎麼':'how',
+    '辦':'handle','什麼':'what','不同':'different','一般':'regular',
+    '零食':'treat','型':'type','有':'has','和':'and','的':'','是':'',
+    '嗎':'','？':'','！':'','，':'',',':'','.':'','：':'','、':'-',
+  };
+  let slug = title;
+  // Replace known terms
+  Object.keys(map).forEach(k=>{ slug=slug.split(k).join(map[k]?'-'+map[k]+'-':'-'); });
+  // Clean up
+  slug = slug.toLowerCase()
+    .replace(/[^a-z0-9-]/g,'')
+    .replace(/-+/g,'-')
+    .replace(/^-|-$/g,'');
+  if(!slug||slug.length<3) slug='article-'+Date.now();
+  return slug;
+}
+
+function renderBodyHtml(body){
+  let i=0;
+  const imgRe=/^!\[([^\]]*)\]\(([^)]+)\)$/;
+  return body.split('\n').map(line=>{
+    if(line.startsWith('## '))return`<h2 id="sec${i++}">${line.slice(3)}</h2>`;
+    if(line.startsWith('### '))return`<h3>${line.slice(4)}</h3>`;
+    if(line.startsWith('- '))return`<li>${line.slice(2)}</li>`;
+    if(line.trim()==='---')return'<hr>';
+    const m=line.match(imgRe);
+    if(m)return`<figure><img src="${m[2]}" alt="${m[1]}" loading="lazy">${m[1]?`<figcaption>${m[1]}</figcaption>`:''}</figure>`;
+    if(line.trim()==='')return'';
+    const bold=line.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+    return`<p>${bold}</p>`;
+  }).join('\n');
+}
+
+function buildTocHtml(body){
+  const lines=body.split('\n').filter(l=>l.startsWith('## '));
+  if(lines.length<2)return'';
+  return`<div class="article-toc"><h4>文章目錄</h4><ol>${lines.map((l,i)=>`<li><a href="#sec${i}">${l.slice(3)}</a></li>`).join('')}</ol></div>`;
+}
+
+async function buildArticleHtml(article, allArticles){
+  // Fetch template
+  const res = await fetch('article-template.html?t='+Date.now());
+  let tmpl = await res.text();
+
+  const slug = article.slug || generateSlug(article.title);
+  const bodyHtml = renderBodyHtml(article.body||'');
+  const tocHtml = buildTocHtml(article.body||'');
+
+  // Cover
+  const coverHtml = article.cover
+    ? `<div class="article-cover"><img src="${article.cover}" alt="${article.coverAlt||article.title}" loading="lazy">${article.coverAlt?`<div class="article-cover-caption">${article.coverAlt}</div>`:''}</div>`
+    : '';
+
+  // FAQ HTML
+  const faqHtml = article.faq&&article.faq.length
+    ? `<div class="article-faq-section"><div class="article-faq-title">📋 常見問答</div>${article.faq.map((f,i)=>`<div class="faq-item" id="faq${i}"><div class="faq-q" onclick="toggleFaq('faq${i}')"><span>${f.q}</span><span class="faq-q-icon">▼</span></div><div class="faq-a"><div class="faq-a-inner">${f.a}</div></div></div>`).join('')}</div>`
+    : '';
+
+  // FAQ Schema
+  const faqSchema = article.faq&&article.faq.length
+    ? `<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[${article.faq.map(f=>`{"@type":"Question","name":"${f.q}","acceptedAnswer":{"@type":"Answer","text":"${f.a}"}}`).join(',')}]}<\/script>`
+    : '';
+
+  // Related articles
+  const related = allArticles.filter(a=>a.id!==article.id&&a.slug!==article.slug).slice(0,3);
+  const relatedHtml = related.length
+    ? `<div class="related-articles"><div class="related-title">延伸閱讀</div><div class="related-list">${related.map(r=>`<a class="related-item" href="${r.slug}.html"><div class="related-thumb">${r.emoji||'📝'}</div><div class="related-info"><div class="related-cat">${r.tag}</div><div class="related-title-text">${r.title}</div></div></a>`).join('')}</div></div>`
+    : '';
+
+  // Replace all placeholders
+  tmpl = tmpl
+    .replace(/\{\{TITLE\}\}/g, article.title||'')
+    .replace(/\{\{EXCERPT\}\}/g, article.excerpt||'')
+    .replace(/\{\{TAG\}\}/g, article.tag||'')
+    .replace(/\{\{TYPE\}\}/g, article.type||'')
+    .replace(/\{\{DATE\}\}/g, article.date||'')
+    .replace(/\{\{SLUG\}\}/g, slug)
+    .replace(/\{\{COVER\}\}/g, article.cover||'')
+    .replace('{{COVER_HTML}}', coverHtml)
+    .replace('{{TOC_HTML}}', tocHtml)
+    .replace('{{BODY_HTML}}', bodyHtml)
+    .replace('{{FAQ_HTML}}', faqHtml)
+    .replace('{{FAQ_SCHEMA}}', faqSchema)
+    .replace('{{RELATED_HTML}}', relatedHtml);
+
+  return { html: tmpl, slug };
+}
+
 async function publishArticle(){
   const title=document.getElementById('aTitle').value.trim();
   const body=document.getElementById('aBody').value.trim();
@@ -725,6 +823,8 @@ async function publishArticle(){
   const faqRaw=document.getElementById('aFaq').value.trim();
   const faqParsed=faqRaw?faqRaw.split('\n').filter(l=>l.includes('::')).map(l=>{const[q,...rest]=l.split('::');return{q:q.trim(),a:rest.join('::').trim()};}):[]; 
   const isEditing=editingId!==null;
+  const existingArticle=isEditing?articles.find(a=>a.id===editingId):null;
+  const existingSlug=existingArticle?existingArticle.slug:null;
   const articleData={
     id:isEditing?editingId:Date.now(),
     tag:document.getElementById('aTag').value,
@@ -735,25 +835,45 @@ async function publishArticle(){
     coverAlt:document.getElementById('aCoverAlt').value.trim(),
     emoji:document.getElementById('aEmoji').value.trim()||'📝',
     body,faq:faqParsed,
-    date:isEditing?(articles.find(a=>a.id===editingId)||{}).date||new Date().toISOString().slice(0,10):new Date().toISOString().slice(0,10)
+    date:isEditing?(existingArticle||{}).date||new Date().toISOString().slice(0,10):new Date().toISOString().slice(0,10),
+    slug:existingSlug||generateSlug(title)
   };
-  setSaveStatus('pubStatus','saving',isEditing?'⏳ 更新文章中...':'⏳ 儲存到 GitHub 中...');
+  setSaveStatus('pubStatus','saving',isEditing?'⏳ 更新文章中...':'⏳ 產生文章頁面中...');
   document.getElementById('pubBtn').disabled=true;
   try{
+    // 1. Build article HTML
+    setSaveStatus('pubStatus','saving','⏳ 產生文章 HTML...');
+    const tempArticles=isEditing?articles.map(a=>a.id===editingId?articleData:a):[articleData,...articles];
+    const{html,slug}=await buildArticleHtml(articleData,tempArticles);
+    articleData.slug=slug;
+
+    // 2. Save article HTML to articles/ folder
+    setSaveStatus('pubStatus','saving','⏳ 上傳文章頁面...');
+    const htmlPath='articles/'+slug+'.html';
+    let htmlSha=null;
+    try{const d=await getFile(htmlPath);htmlSha=d.sha;}catch(e){}
+    const htmlEncoded=btoa(String.fromCharCode(...new TextEncoder().encode(html)));
+    const htmlBody={message:(isEditing?'更新':'新增')+'文章頁面：'+title,content:htmlEncoded,branch:cfg.branch};
+    if(htmlSha)htmlBody.sha=htmlSha;
+    const htmlRes=await ghFetch(htmlPath,{method:'PUT',body:JSON.stringify(htmlBody)});
+    if(!htmlRes.ok){const e=await htmlRes.json();throw new Error(e.message);}
+
+    // 3. Update articles.json
+    setSaveStatus('pubStatus','saving','⏳ 更新文章索引...');
     const{sha}=await getFile(ARTICLES_PATH);
     if(isEditing){
       const idx=articles.findIndex(a=>a.id===editingId);
-      if(idx>=0)articles[idx]=articleData;
-      else articles.unshift(articleData);
+      if(idx>=0)articles[idx]=articleData;else articles.unshift(articleData);
     }else{
       articles.unshift(articleData);
     }
     await putFile(ARTICLES_PATH,articles,sha,isEditing?`更新文章：${title}`:`新增文章：${title}`);
+
     clearForm();renderArticleList();
-    const msg=isEditing?'✅ 文章已更新！':'✅ 文章已發布！';
-    setSaveStatus('pubStatus','ok',isEditing?'✅ 更新成功！':'✅ 發布成功！');
-    showToast(msg);
-    setTimeout(()=>hideSaveStatus('pubStatus'),4000);
+    const articleUrl='https://dadawution.github.io/catnourish/articles/'+slug+'.html';
+    setSaveStatus('pubStatus','ok','✅ '+(isEditing?'更新':'發布')+'成功！<a href="'+articleUrl+'" target="_blank" style="margin-left:8px;color:var(--teal)">查看文章 ↗</a>');
+    showToast(isEditing?'✅ 文章已更新！':'✅ 文章已發布！');
+    setTimeout(()=>hideSaveStatus('pubStatus'),6000);
   }catch(e){setSaveStatus('pubStatus','err','❌ '+(isEditing?'更新':'發布')+'失敗：'+e.message);}
   document.getElementById('pubBtn').disabled=false;
 }
