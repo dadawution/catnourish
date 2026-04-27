@@ -404,6 +404,12 @@
         </div>
       </div>
       <div class="form-card">
+        <h2>🔄 重新產生所有文章</h2>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;line-height:1.7">還原備份後、更新模板設計後、或更換網域後，點此一鍵重新產生所有文章 HTML 並更新 sitemap。</p>
+        <div class="save-status" id="rebuildStatus"></div>
+        <button class="btn btn-primary" id="rebuildBtn" onclick="rebuildAllArticles()">🔄 重新產生所有文章 HTML</button>
+      </div>
+      <div class="form-card">
         <h2>💾 資料備份</h2>
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:20px;line-height:1.7">建議定期將文章資料備份到你的電腦，以防萬一。下載的 JSON 檔案可以在需要時重新上傳到 GitHub 還原。</p>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
@@ -751,6 +757,61 @@ function renderPickerGrid(){
 function selectPhoto(url){
   if(pickerTarget)document.getElementById(pickerTarget).value=url;
   closePicker();showToast('✅ 圖片已選取');
+}
+
+// ── REBUILD ALL ──
+async function rebuildAllArticles(){
+  const btn=document.getElementById('rebuildBtn');
+  btn.disabled=true;
+  const total=articles.filter(a=>a.slug).length;
+  if(total===0){showToast('沒有可產生的文章');btn.disabled=false;return;}
+  setSaveStatus('rebuildStatus','saving',`⏳ 準備產生 ${total} 篇文章...`);
+  let done=0;
+  let errors=[];
+  for(const article of articles){
+    if(!article.slug)continue;
+    setSaveStatus('rebuildStatus','saving',`⏳ 產生第 ${done+1} / ${total} 篇：${article.title.slice(0,20)}...`);
+    try{
+      const allArticles=articles;
+      const{html,slug}=await buildArticleHtml(article,allArticles);
+      const htmlPath='articles/'+slug+'.html';
+      const htmlEncoded=btoa(String.fromCharCode(...new TextEncoder().encode(html)));
+      let htmlSha=null;
+      try{htmlSha=await getFileSha(htmlPath);}catch(e){}
+      const body={message:`重新產生文章：${article.title}`,content:htmlEncoded,branch:cfg.branch};
+      if(htmlSha)body.sha=htmlSha;
+      const res=await ghFetch(htmlPath,{method:'PUT',body:JSON.stringify(body)});
+      if(!res.ok){
+        const raw=await res.text();
+        let msg=raw;
+        try{msg=JSON.parse(raw).message||raw;}catch(e){}
+        if(msg.includes('sha')&&!htmlSha){
+          const freshSha=await getFileSha(htmlPath);
+          body.sha=freshSha;
+          await ghFetch(htmlPath,{method:'PUT',body:JSON.stringify(body)});
+        } else {
+          errors.push(article.title);
+        }
+      }
+      done++;
+    }catch(e){
+      errors.push(article.title);
+      console.error('產生失敗',article.title,e);
+    }
+    // Small delay to avoid GitHub rate limiting
+    await new Promise(r=>setTimeout(r,300));
+  }
+  // Update sitemap
+  setSaveStatus('rebuildStatus','saving','⏳ 更新 sitemap...');
+  await updateSitemap();
+  if(errors.length>0){
+    setSaveStatus('rebuildStatus','err',`⚠️ 完成 ${done} 篇，失敗 ${errors.length} 篇：${errors.join('、')}`);
+  }else{
+    setSaveStatus('rebuildStatus','ok',`✅ 全部 ${done} 篇重新產生完成！`);
+    showToast(`✅ ${done} 篇文章已全部更新`);
+    setTimeout(()=>hideSaveStatus('rebuildStatus'),5000);
+  }
+  btn.disabled=false;
 }
 
 // ── BACKUP ──
