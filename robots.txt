@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://dadawution.github.io/bionature/sitemap.xml
+Sitemap: https://catcare.tw/sitemap.xml
