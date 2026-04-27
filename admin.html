@@ -956,6 +956,28 @@ async function buildArticleHtml(article, allArticles){
   return { html: tmpl, slug };
 }
 
+// ── AUTO SITEMAP ──
+async function updateSitemap(){
+  try{
+    const base='https://catcare.tw';
+    let xml='<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    xml+=`  <url><loc>${base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n`;
+    articles.filter(a=>a.slug).forEach(a=>{
+      xml+=`  <url><loc>${base}/articles/${a.slug}.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>\n`;
+    });
+    xml+='</urlset>';
+    const encoded=btoa(String.fromCharCode(...new TextEncoder().encode(xml)));
+    let smSha=null;
+    try{smSha=await getFileSha('sitemap.xml');}catch(e){}
+    const body={message:'更新 sitemap',content:encoded,branch:cfg.branch};
+    if(smSha)body.sha=smSha;
+    await ghFetch('sitemap.xml',{method:'PUT',body:JSON.stringify(body)});
+  }catch(e){
+    console.error('sitemap 更新失敗',e);
+    // Non-critical, don't throw
+  }
+}
+
 async function publishArticle(){
   const title=document.getElementById('aTitle').value.trim();
   const body=document.getElementById('aBody').value.trim();
@@ -1024,8 +1046,12 @@ async function publishArticle(){
     }
     await putFile(ARTICLES_PATH,articles,sha,isEditing?`更新文章：${title}`:`新增文章：${title}`);
 
+    // 4. Auto-update sitemap.xml
+    setSaveStatus('pubStatus','saving','⏳ 更新 Sitemap...');
+    await updateSitemap();
+
     clearForm();renderArticleList();
-    const articleUrl='https://dadawution.github.io/catnourish/articles/'+slug+'.html';
+    const articleUrl='https://catcare.tw/articles/'+slug+'.html';
     setSaveStatus('pubStatus','ok','✅ '+(isEditing?'更新':'發布')+'成功！<a href="'+articleUrl+'" target="_blank" style="margin-left:8px;color:var(--teal)">查看文章 ↗</a>');
     showToast(isEditing?'✅ 文章已更新！':'✅ 文章已發布！');
     setTimeout(()=>hideSaveStatus('pubStatus'),6000);
