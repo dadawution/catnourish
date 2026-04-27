@@ -1,23 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://catcare.tw/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://catcare.tw/articles/senior-cat-low-phosphorus-diet.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://catcare.tw/articles/cat-loss-of-appetite-causes.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://catcare.tw/articles/functional-vs-treat-cat-puree.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
+  <url><loc>https://catcare.tw/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://catcare.tw/articles/cat-medicine-tips.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://catcare.tw/articles/senior-cat-diet.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://catcare.tw/articles/cat-loss-of-appetite-causes.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://catcare.tw/articles/lickable-cat-treats.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>
