@@ -404,6 +404,16 @@
         </div>
       </div>
       <div class="form-card">
+        <h2>💾 資料備份</h2>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:20px;line-height:1.7">建議定期將文章資料備份到你的電腦，以防萬一。下載的 JSON 檔案可以在需要時重新上傳到 GitHub 還原。</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-ghost" onclick="exportBackup('articles')">⬇️ 下載文章備份（articles.json）</button>
+          <button class="btn btn-ghost" onclick="exportBackup('faqs')">⬇️ 下載問答備份（faqs.json）</button>
+          <button class="btn btn-ghost" onclick="exportBackup('all')">⬇️ 下載完整備份（全部）</button>
+        </div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:12px">上次備份時間：<span id="lastBackupTime">尚未備份</span></div>
+      </div>
+      <div class="form-card">
         <h2>📝 JSON 格式參考</h2>
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;line-height:1.7">在 AI 工具裡要求它用以下格式輸出，後台就能自動解析填入所有欄位。</p>
         <pre style="background:var(--warm);border-radius:8px;padding:16px;font-size:.75rem;line-height:1.8;overflow-x:auto;color:var(--ink-2)">{
@@ -743,6 +753,29 @@ function selectPhoto(url){
   closePicker();showToast('✅ 圖片已選取');
 }
 
+// ── BACKUP ──
+function exportBackup(type){
+  const now = new Date().toISOString().slice(0,10);
+  if(type==='articles'||type==='all'){
+    const blob=new Blob([JSON.stringify(articles,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`articles-backup-${now}.json`;
+    a.click();
+  }
+  if(type==='faqs'||type==='all'){
+    const blob=new Blob([JSON.stringify(faqs,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`faqs-backup-${now}.json`;
+    a.click();
+  }
+  localStorage.setItem('bio_last_backup', new Date().toLocaleString('zh-TW'));
+  const el=document.getElementById('lastBackupTime');
+  if(el)el.textContent=localStorage.getItem('bio_last_backup');
+  showToast('✅ 備份已下載');
+}
+
 // ── SETTINGS ──
 function loadSettings(){
   document.getElementById('settingsTone').value=localStorage.getItem('bio_tone')||'';
@@ -750,6 +783,9 @@ function loadSettings(){
   document.getElementById('settingsEnding').value=localStorage.getItem('bio_ending')||'';
   document.getElementById('settingsAvoid').value=localStorage.getItem('bio_avoid')||'';
   document.getElementById('settingsExtra').value=localStorage.getItem('bio_extra')||'';
+  const lastBackup=localStorage.getItem('bio_last_backup');
+  const el=document.getElementById('lastBackupTime');
+  if(el&&lastBackup)el.textContent=lastBackup;
 }
 function saveSettings(){
   localStorage.setItem('bio_tone',document.getElementById('settingsTone').value.trim());
