@@ -809,8 +809,13 @@ function autoFillSlug(){
 }
 function cleanSlug(){
   const el=document.getElementById('aSlug');
-  el.dataset.auto='false'; // user is manually editing
-  el.value=el.value.toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-');
+  el.dataset.auto='false';
+  const pos=el.selectionStart;
+  const cleaned=el.value.toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-');
+  if(el.value!==cleaned){
+    el.value=cleaned;
+    el.setSelectionRange(pos,pos);
+  }
 }
 
 // ── JSON PASTE MODAL ──
