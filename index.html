@@ -1051,7 +1051,8 @@ function renderHome() {
     sfg.innerHTML = articles.slice(2, 4).map(a => articleCardHTML(a)).join('');
   }
   const lg = document.getElementById('latestGrid');
-  lg.innerHTML = articles.slice(0, 3).map(a => articleCardHTML(a)).join('');
+  const publishedArticles = articles.filter(a => !a.draft);
+  lg.innerHTML = publishedArticles.slice(0, 3).map(a => articleCardHTML(a)).join('');
   const fl = document.getElementById('homeFaqList');
   fl.innerHTML = faqs.slice(0, 5).map((f, i) => `
     <div class="faq-item" id="hfaq${i}">
@@ -1071,7 +1072,8 @@ function renderArticlesPage() {
     b.classList.toggle('active', b.dataset.tag === currentFilter);
     b.onclick = () => { currentFilter = b.dataset.tag; renderArticlesPage(); };
   });
-  const filtered = currentFilter === '全部' ? articles : articles.filter(a => a.tag === currentFilter);
+  const published = articles.filter(a => !a.draft);
+  const filtered = currentFilter === '全部' ? published : published.filter(a => a.tag === currentFilter);
   const grid = document.getElementById('articlesGrid');
   if (filtered.length === 0) {
     grid.innerHTML = '<div class="empty-articles"><p style="font-size:2rem">📝</p><p style="margin-top:8px">這個分類還沒有文章</p></div>';

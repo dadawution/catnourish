@@ -90,6 +90,7 @@
     .admin-item{background:white;border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px}
     .item-info{flex:1;min-width:0}
     .item-cat{font-size:.7rem;padding:2px 8px;border-radius:10px;background:var(--teal-light);color:var(--teal);display:inline-block;margin-bottom:3px}
+    .item-draft-badge{font-size:.68rem;padding:2px 8px;border-radius:10px;background:var(--amber-light);color:var(--amber);border:1px solid var(--amber);display:inline-block;margin-left:6px;vertical-align:middle}
     .item-title{font-weight:500;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .item-meta{font-size:.72rem;color:#bbb;margin-top:2px}
     .item-actions{display:flex;gap:8px;flex-shrink:0}
@@ -351,6 +352,7 @@
         <div class="save-status" id="pubStatus"></div>
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="clearForm()">清除</button>
+          <button class="btn" id="draftBtn" onclick="saveDraft()" style="background:var(--amber-light);color:var(--amber);border:1px solid var(--amber)">💾 儲存草稿</button>
           <button class="btn btn-primary" id="pubBtn" onclick="publishArticle()">📤 發布到 GitHub</button>
         </div>
       </div>
@@ -1113,7 +1115,8 @@ async function publishArticle(){
     body,faq:faqParsed,
     tags:document.getElementById('aTags').value.trim().split(',').map(t=>t.trim()).filter(Boolean),
     date:isEditing?(existingArticle||{}).date||new Date().toISOString().slice(0,10):new Date().toISOString().slice(0,10),
-    slug:(document.getElementById('aSlug').value.trim()||existingSlug||generateSlug(title)).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'')||generateSlug(title)
+    slug:(document.getElementById('aSlug').value.trim()||existingSlug||generateSlug(title)).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'')||generateSlug(title),
+    draft:false
   };
   setSaveStatus('pubStatus','saving',isEditing?'⏳ 更新文章中...':'⏳ 產生文章頁面中...');
   document.getElementById('pubBtn').disabled=true;
@@ -1168,6 +1171,8 @@ async function publishArticle(){
     clearForm();renderArticleList();
     const articleUrl='https://catcare.tw/articles/'+slug+'.html';
     setSaveStatus('pubStatus','ok','✅ '+(isEditing?'更新':'發布')+'成功！<a href="'+articleUrl+'" target="_blank" style="margin-left:8px;color:var(--teal)">查看文章 ↗</a>');
+    // Clear local draft if exists
+    if(isEditing)localStorage.removeItem(DRAFT_KEY+'_'+editingId);
     showToast(isEditing?'✅ 文章已更新！':'✅ 文章已發布！');
     setTimeout(()=>hideSaveStatus('pubStatus'),6000);
   }catch(e){setSaveStatus('pubStatus','err','❌ '+(isEditing?'更新':'發布')+'失敗：'+e.message);}
@@ -1180,6 +1185,99 @@ function clearForm(){
   document.getElementById('pubBtn').textContent='📤 發布到 GitHub';
   document.getElementById('formModeLabel').textContent='✨ AI 輔助文章生成';
   updatePreview();
+}
+
+// ── DRAFT ──
+const DRAFT_KEY = 'bio_draft';
+
+function saveDraft() {
+  const title = document.getElementById('aTitle').value.trim();
+  if (!title) { alert('請至少填寫標題再儲存草稿'); return; }
+  const isEditing = editingId !== null;
+  const existingArticle = isEditing ? articles.find(a => a.id === editingId) : null;
+  const faqRaw = document.getElementById('aFaq').value.trim();
+  const faqParsed = faqRaw ? faqRaw.split('\n').filter(l => l.includes('::')).map(l => { const [q, ...rest] = l.split('::'); return { q: q.trim(), a: rest.join('::').trim() }; }) : [];
+  
+  if (isEditing && existingArticle && !existingArticle.draft) {
+    // Editing published article: save to localStorage only
+    const draftData = {
+      editingId,
+      tag: document.getElementById('aTag').value,
+      type: document.getElementById('aType').value,
+      title,
+      excerpt: document.getElementById('aExcerpt').value.trim(),
+      cover: document.getElementById('aCover').value.trim(),
+      coverAlt: document.getElementById('aCoverAlt').value.trim(),
+      emoji: document.getElementById('aEmoji').value.trim() || '📝',
+      body: document.getElementById('aBody').value.trim(),
+      tags: document.getElementById('aTags').value.trim().split(',').map(t => t.trim()).filter(Boolean),
+      faq: faqParsed,
+      slug: document.getElementById('aSlug').value.trim(),
+    };
+    localStorage.setItem(DRAFT_KEY + '_' + editingId, JSON.stringify(draftData));
+    showToast('💾 草稿已暫存（不影響已發布版本）');
+  } else {
+    // New article or existing draft: save to GitHub with draft:true
+    saveDraftToGitHub();
+  }
+}
+
+async function saveDraftToGitHub() {
+  const title = document.getElementById('aTitle').value.trim();
+  const body = document.getElementById('aBody').value.trim() || ' ';
+  const faqRaw = document.getElementById('aFaq').value.trim();
+  const faqParsed = faqRaw ? faqRaw.split('\n').filter(l => l.includes('::')).map(l => { const [q, ...rest] = l.split('::'); return { q: q.trim(), a: rest.join('::').trim() }; }) : [];
+  const isEditing = editingId !== null;
+  const existingArticle = isEditing ? articles.find(a => a.id === editingId) : null;
+  const existingSlug = existingArticle ? existingArticle.slug : null;
+  const slug = (document.getElementById('aSlug').value.trim() || existingSlug || generateSlug(title)).toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/, '') || generateSlug(title);
+  const draftArticle = {
+    id: isEditing ? editingId : Date.now(),
+    tag: document.getElementById('aTag').value,
+    type: document.getElementById('aType').value,
+    title,
+    excerpt: document.getElementById('aExcerpt').value.trim(),
+    cover: document.getElementById('aCover').value.trim(),
+    coverAlt: document.getElementById('aCoverAlt').value.trim(),
+    emoji: document.getElementById('aEmoji').value.trim() || '📝',
+    body, faq: faqParsed,
+    tags: document.getElementById('aTags').value.trim().split(',').map(t => t.trim()).filter(Boolean),
+    date: isEditing ? (existingArticle || {}).date || new Date().toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+    slug, draft: true
+  };
+  document.getElementById('draftBtn').disabled = true;
+  try {
+    const { sha } = await getFile(ARTICLES_PATH);
+    if (isEditing) {
+      const idx = articles.findIndex(a => a.id === editingId);
+      if (idx >= 0) articles[idx] = draftArticle; else articles.unshift(draftArticle);
+    } else {
+      articles.unshift(draftArticle);
+    }
+    await putFile(ARTICLES_PATH, articles, sha, `儲存草稿：${title}`);
+    clearForm(); renderArticleList();
+    showToast('💾 草稿已儲存！可在文章列表找到');
+  } catch(e) { showToast('❌ 儲存失敗：' + e.message); }
+  document.getElementById('draftBtn').disabled = false;
+}
+
+async function publishDraft(id) {
+  const a = articles.find(x => x.id === id);
+  if (!a) return;
+  // Load draft into form and switch to edit mode
+  editArticle(id);
+  // Check if there's a local draft override
+  const localDraft = localStorage.getItem(DRAFT_KEY + '_' + id);
+  if (localDraft) {
+    const d = JSON.parse(localDraft);
+    document.getElementById('aBody').value = d.body || '';
+    document.getElementById('aExcerpt').value = d.excerpt || '';
+    document.getElementById('aTags').value = (d.tags || []).join(', ');
+    updatePreview();
+    showToast('已載入本機草稿，確認後點「更新文章」正式發布');
+  } else {
+    showToast('已載入草稿，確認後點「更新文章」正式發布');
+  }
 }
 
 // ── EDIT ARTICLE ──
@@ -1211,7 +1309,18 @@ function editArticle(id){
   // Switch to new tab and scroll to top
   switchTab('new');
   window.scrollTo({top:0,behavior:'smooth'});
-  showToast('已載入文章，修改後點「更新文章」儲存');
+  // Check for local draft
+  const localDraft = localStorage.getItem(DRAFT_KEY + '_' + id);
+  if (localDraft) {
+    const d = JSON.parse(localDraft);
+    document.getElementById('aBody').value = d.body || document.getElementById('aBody').value;
+    document.getElementById('aExcerpt').value = d.excerpt || document.getElementById('aExcerpt').value;
+    document.getElementById('aTags').value = d.tags ? d.tags.join(', ') : document.getElementById('aTags').value;
+    updatePreview();
+    showToast('💾 已載入本機草稿版本');
+  } else {
+    showToast('已載入文章，修改後點「更新文章」儲存');
+  }
 }
 
 // ── ARTICLE LIST ──
@@ -1224,11 +1333,15 @@ function renderArticleList(){
       ondragleave="onDragLeave(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
       <div class="drag-handle" title="拖曳排序">☰</div>
       <div class="item-info">
-        <span class="item-cat">${a.tag}</span>
+        <span class="item-cat">${a.tag}</span>${a.draft?'<span class="item-draft-badge">草稿</span>':''}
         <div class="item-title">${a.title}</div>
         <div class="item-meta">${a.date} ・ ${a.type}</div>
       </div>
-      <div class="item-actions"><button class="btn-sm" style="background:var(--teal-light);color:var(--teal)" onclick="editArticle(${a.id})">編輯</button><button class="btn-sm btn-del" onclick="openDelModal(${a.id})">刪除</button></div>
+      <div class="item-actions">
+        ${a.draft?`<button class="btn-sm" style="background:var(--amber-light);color:var(--amber);border:1px solid var(--amber)" onclick="publishDraft(${a.id})">發布</button>`:''}
+        <button class="btn-sm" style="background:var(--teal-light);color:var(--teal)" onclick="editArticle(${a.id})">編輯</button>
+        <button class="btn-sm btn-del" onclick="openDelModal(${a.id})">刪除</button>
+      </div>
     </div>`).join('')}</div>`;
 }
 
