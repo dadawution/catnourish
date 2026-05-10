@@ -345,8 +345,9 @@
       line-height: 1.4; color: var(--ink); margin-bottom: 16px;
     }
     .article-meta-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-    .article-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
-    .article-tag { font-size: .72rem; padding: 3px 10px; border-radius: 10px; background: var(--warm); color: var(--muted); border: 1px solid var(--border); }
+    .article-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 32px 0; padding: 20px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .article-tags-label { font-size: .78rem; color: var(--muted); margin-right: 4px; align-self: center; }
+    .article-tag { font-size: .8rem; padding: 6px 14px; border-radius: 8px; background: var(--teal-light); color: var(--teal); border: 1px solid var(--border); font-weight: 500; }
     .article-meta-item { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
 
     .article-summary {
@@ -1107,6 +1108,7 @@ function openArticle(id) {
     <div class="article-summary"><strong>文章重點：</strong>${a.excerpt}</div>
     ${buildToc(a.body)}
     <div class="article-body">${bodyWithAnchors(a.body)}</div>
+    ${a.tags && a.tags.length ? `<div class="article-tags"><span class="article-tags-label">標籤：</span>${a.tags.map(t=>`<span class="article-tag">#${t}</span>`).join('')}</div>` : ''}
     ${a.faq && a.faq.length ? `
     <div class="article-faq-section">
       <div class="article-faq-title">📋 常見問答</div>

@@ -74,8 +74,9 @@
     .article-cat{font-size:.72rem;padding:3px 12px;border-radius:12px;background:var(--teal-light);color:var(--teal);display:inline-block;margin-bottom:14px;font-weight:500}
     .article-h1{font-family:'Noto Serif TC',serif;font-size:1.9rem;font-weight:900;line-height:1.4;color:var(--ink);margin-bottom:16px}
     .article-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:.78rem;color:var(--muted)}
-    .article-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
-    .article-tag{font-size:.72rem;padding:3px 10px;border-radius:10px;background:var(--warm);color:var(--muted);border:1px solid var(--border)}
+    .article-tags{display:flex;flex-wrap:wrap;gap:8px;margin:32px 0;padding:20px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .article-tags-label{font-size:.78rem;color:var(--muted);margin-right:4px;align-self:center}
+    .article-tag{font-size:.8rem;padding:6px 14px;border-radius:8px;background:var(--teal-light);color:var(--teal);border:1px solid var(--border);font-weight:500}
 
     /* COVER */
     .article-cover{width:100%;border-radius:12px;margin-bottom:32px;overflow:hidden;background:var(--warm)}
@@ -210,7 +211,6 @@
       </div>
     </div>
 
-    {{TAGS_HTML}}
     {{COVER_HTML}}
 
     <div class="article-summary"><strong>文章重點：</strong>{{EXCERPT}}</div>
@@ -219,6 +219,7 @@
 
     <div class="article-body">{{BODY_HTML}}</div>
 
+    {{TAGS_HTML}}
     {{FAQ_HTML}}
 
     <div class="article-cta">
