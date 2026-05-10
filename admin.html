@@ -1111,6 +1111,7 @@ async function publishArticle(){
     coverAlt:document.getElementById('aCoverAlt').value.trim(),
     emoji:document.getElementById('aEmoji').value.trim()||'📝',
     body,faq:faqParsed,
+    tags:document.getElementById('aTags').value.trim().split(',').map(t=>t.trim()).filter(Boolean),
     date:isEditing?(existingArticle||{}).date||new Date().toISOString().slice(0,10):new Date().toISOString().slice(0,10),
     slug:(document.getElementById('aSlug').value.trim()||existingSlug||generateSlug(title)).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'')||generateSlug(title)
   };
