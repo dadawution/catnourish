@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title id="metaTitle">貓咪照護飲食誌｜Cat Nourish Journal</title>
-  <meta id="metaDesc" name="description" content="貓咪照護飲食誌 Cat Nourish Journal，獨立第三方貓咪飲食與照護知識站，涵蓋老貓營養、副食選擇、低磷低鈉飲食等實用內容。">
+  <title id="metaTitle">貓咪照護飲食誌｜Cat Care Journal</title>
+  <meta id="metaDesc" name="description" content="貓咪照護飲食誌 Cat Care Journal，獨立第三方貓咪飲食與照護知識站，涵蓋老貓營養、副食選擇、低磷低鈉飲食等實用內容。">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -599,6 +599,9 @@
     @media (max-width: 768px) {
       .hero-inner { grid-template-columns: 1fr; gap: 40px; }
       .hero-right { display: none; }
+      .hero-title { font-size: 2rem; }
+      .hero-desc { font-size: 0.875rem; }
+      .hero-left { padding: 0 4px; }
       .hero h1 { font-size: 1.8rem; }
       .topic-grid { grid-template-columns: repeat(2, 1fr); }
       .article-grid { grid-template-columns: 1fr; }
@@ -637,7 +640,7 @@
   <div class="nav-inner">
     <div class="nav-logo" onclick="goPage('home')">
       <span class="nav-logo-en">貓咪照護飲食誌</span>
-      <span class="nav-logo-zh">Cat Nourish Journal</span>
+      <span class="nav-logo-zh">Cat Care Journal</span>
     </div>
     <ul class="nav-links">
       <li><a href="#" onclick="goPage('home');return false;">首頁</a></li>
@@ -658,9 +661,9 @@
   <div class="hero">
     <div class="hero-inner container">
       <div>
-        <div class="hero-eyebrow">獨立第三方貓咪照護知識誌</div>
+        <div class="hero-eyebrow">貓咪照護的知識基地</div>
         <h1>貓咪的<em>飲食照護</em><br>從這裡開始</h1>
-        <p class="hero-desc">Cat Nourish Journal 是一個獨立的貓咪飲食與照護知識站，涵蓋老貓營養、副食選擇、低磷低鈉飲食，幫助你為貓咪做出更好的照護決定。</p>
+        <p class="hero-desc">每一篇文章，都是為了讓你更懂你的貓。</p>
         <div class="hero-btns">
           <button class="btn-hero-primary" onclick="goPage('articles')">瀏覽知識文章</button>
           <button class="btn-hero-secondary" onclick="goPage('faq')">查看常見問答</button>
@@ -668,22 +671,22 @@
       </div>
       <div class="hero-right">
         <div class="hero-stat" onclick="filterAndGo('飲食照護')">
-          <div class="hero-stat-num">🍽 飲食照護</div>
+          <div class="hero-stat-num">飲食照護</div>
           <div class="hero-stat-label">日常飲食選擇、餵食方式與注意事項</div>
           <span class="hero-stat-arrow">→ 查看文章</span>
         </div>
         <div class="hero-stat" onclick="filterAndGo('熟齡貓照護')">
-          <div class="hero-stat-num">🐱 熟齡貓照護</div>
+          <div class="hero-stat-num">熟齡貓照護</div>
           <div class="hero-stat-label">老貓特殊照護需求與健康管理</div>
           <span class="hero-stat-arrow">→ 查看文章</span>
         </div>
         <div class="hero-stat" onclick="filterAndGo('副食與營養')">
-          <div class="hero-stat-num">💊 副食與營養</div>
+          <div class="hero-stat-num">副食與營養</div>
           <div class="hero-stat-label">肉泥、副食品的選擇與搭配指南</div>
           <span class="hero-stat-arrow">→ 查看文章</span>
         </div>
         <div class="hero-stat" onclick="goPage('faq')">
-          <div class="hero-stat-num">❓ 常見問答</div>
+          <div class="hero-stat-num">常見問答</div>
           <div class="hero-stat-label">飼主最常問的照護問題一次解答</div>
           <span class="hero-stat-arrow">→ 查看問答</span>
         </div>
@@ -774,7 +777,7 @@
     <div class="container" style="display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center">
       <div>
         <h2>關於貓咪照護飲食誌</h2>
-        <p>Cat Nourish Journal 是獨立的第三方貓咪飲食照護知識站。我們不賣產品，只整理知識——從老貓營養到副食選擇，幫助飼主做出有依據的照護決定。</p>
+        <p>Cat Care Journal 是獨立的第三方貓咪飲食照護知識站。我們不賣產品，只整理知識——從老貓營養到副食選擇，幫助飼主做出有依據的照護決定。</p>
       </div>
       <div class="brand-strip-btns">
         <button class="btn-strip-primary" onclick="goPage('articles')">瀏覽所有文章</button>
@@ -919,7 +922,7 @@
   <div class="about-layout">
     <div class="about-hero">
       <h1>關於貓咪照護飲食誌</h1>
-      <p>Cat Nourish Journal 是一個獨立的第三方貓咪飲食與照護知識站。我們不隸屬於任何品牌或廠商，只做一件事：把對飼主真正有用的照護知識，整理成清楚易懂的內容。</p>
+      <p>Cat Care Journal 是一個獨立的第三方貓咪飲食與照護知識站。我們不隸屬於任何品牌或廠商，只做一件事：把對飼主真正有用的照護知識，整理成清楚易懂的內容。</p>
     </div>
     <div class="about-values">
       <div class="about-value">
@@ -941,7 +944,7 @@
     <div style="margin-bottom:40px">
       <div class="section-title" style="margin-bottom:16px">為什麼需要這個知識站？</div>
       <p style="font-size:0.95rem;color:var(--muted);line-height:1.9;margin-bottom:16px">貓咪飲食的資訊散落在各處——有些是品牌的行銷內容，有些是論壇的個人經驗，很難判斷哪些真正可信。尤其是老貓照護、低磷低鈉飲食、副食選擇這些主題，需要有人把知識整理清楚。</p>
-      <p style="font-size:0.95rem;color:var(--muted);line-height:1.9">Cat Nourish Journal 的存在，就是為了填補這個缺口——提供有結構、有搜尋邏輯、對飼主真正有幫助的知識內容。</p>
+      <p style="font-size:0.95rem;color:var(--muted);line-height:1.9">Cat Care Journal 的存在，就是為了填補這個缺口——提供有結構、有搜尋邏輯、對飼主真正有幫助的知識內容。</p>
     </div>
     <div class="about-note">
       <strong>📌 關於內容定位</strong><br>
@@ -1118,7 +1121,7 @@ function openArticle(id) {
       <h1 class="article-h1">${a.title}</h1>
       <div class="article-meta-row">
         <div class="article-meta-item">📅 ${a.date}</div>
-        <div class="article-meta-item">🐾 Cat Nourish Journal</div>
+        <div class="article-meta-item">🐾 Cat Care Journal</div>
         <div class="article-meta-item">📌 ${a.type}</div>
       </div>
     </div>
@@ -1219,7 +1222,7 @@ function renderFooter(page) {
     <div class="footer-inner">
       <div>
         <div class="footer-brand-name">貓咪照護飲食誌</div>
-        <div class="footer-brand-desc">Cat Nourish Journal｜獨立第三方貓咪飲食與照護知識站，涵蓋老貓營養、副食選擇、低磷低鈉飲食，幫助飼主做出有依據的照護決定。</div>
+        <div class="footer-brand-desc">Cat Care Journal｜獨立第三方貓咪飲食與照護知識站，涵蓋老貓營養、副食選擇、低磷低鈉飲食，幫助飼主做出有依據的照護決定。</div>
       </div>
       <div class="footer-col">
         <h4>知識內容</h4>
@@ -1239,7 +1242,7 @@ function renderFooter(page) {
       </div>
     </div>
     <div class="footer-bottom">
-      <div>© 2026 貓咪照護飲食誌 Cat Nourish Journal · 內容僅供參考，實際照護請諮詢獸醫師</div>
+      <div>© 2026 貓咪照護飲食誌 Cat Care Journal · 內容僅供參考，實際照護請諮詢獸醫師</div>
       <div class="footer-notice">知識在前，照護在後</div>
     </div>
   </footer>`;
