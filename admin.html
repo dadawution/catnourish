@@ -342,6 +342,11 @@
             </div>
           </div>
         </div>
+        <div class="form-group">
+          <label>文章標籤（逗號分隔，有助未來 SEO 分類）</label>
+          <input type="text" id="aTags" placeholder="例如：老貓, 低磷, 腎病, 肉泥">
+          <div style="font-size:.72rem;color:var(--muted);margin-top:4px">多個標籤用逗號分隔，之後可建立標籤頁面</div>
+        </div>
         <div class="form-group"><label>FAQ（每行一組，格式：問題::回答）</label><textarea id="aFaq" style="min-height:100px" placeholder="老貓幾歲開始::通常7歲以上&#10;低磷有效嗎::有助於減少腎臟負擔"></textarea></div>
         <div class="save-status" id="pubStatus"></div>
         <div class="btn-row">
@@ -941,6 +946,7 @@ function parseAndFill(){
     document.getElementById('aBody').value=parsed.body||'';
     document.getElementById('aEmoji').value=parsed.emoji||'📝';
     if(parsed.tag)document.getElementById('aTag').value=parsed.tag;
+    if(parsed.tags&&Array.isArray(parsed.tags))document.getElementById('aTags').value=parsed.tags.join(', ');
     if(parsed.faq&&Array.isArray(parsed.faq)){
       document.getElementById('aFaq').value=parsed.faq.map(f=>`${f.q}::${f.a}`).join('\n');
     }
@@ -1033,6 +1039,11 @@ async function buildArticleHtml(article, allArticles){
     ? `<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[${article.faq.map(f=>`{"@type":"Question","name":"${f.q}","acceptedAnswer":{"@type":"Answer","text":"${f.a}"}}`).join(',')}]}<\/script>`
     : '';
 
+  // Tags HTML
+  const tagsHtml = article.tags&&article.tags.length
+    ? `<div class="article-tags">${article.tags.map(t=>`<span class="article-tag">#${t}</span>`).join('')}</div>`
+    : '';
+
   // Related articles
   const related = allArticles.filter(a=>a.id!==article.id&&a.slug!==article.slug).slice(0,3);
   const relatedHtml = related.length
@@ -1048,6 +1059,7 @@ async function buildArticleHtml(article, allArticles){
     .replace(/\{\{DATE\}\}/g, article.date||'')
     .replace(/\{\{SLUG\}\}/g, slug)
     .replace(/\{\{COVER\}\}/g, article.cover||'')
+    .replace('{{TAGS_HTML}}', tagsHtml)
     .replace('{{COVER_HTML}}', coverHtml)
     .replace('{{TOC_HTML}}', tocHtml)
     .replace('{{BODY_HTML}}', bodyHtml)
@@ -1161,7 +1173,7 @@ async function publishArticle(){
   document.getElementById('pubBtn').disabled=false;
 }
 function clearForm(){
-  ['aTopic','aTitle','aSlug','aExcerpt','aCover','aCoverAlt','aBody','aFaq'].forEach(id=>document.getElementById(id).value='');
+  ['aTopic','aTitle','aSlug','aExcerpt','aCover','aCoverAlt','aBody','aTags','aFaq'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('aEmoji').value='📝';
   editingId=null;
   document.getElementById('pubBtn').textContent='📤 發布到 GitHub';
@@ -1180,6 +1192,7 @@ function editArticle(id){
   document.getElementById('aTopic').value='';
   document.getElementById('aTitle').value=a.title||'';
   document.getElementById('aSlug').value=a.slug||'';
+  document.getElementById('aTags').value=(a.tags||[]).join(', ');
   document.getElementById('aExcerpt').value=a.excerpt||'';
   document.getElementById('aCover').value=a.cover||'';
   document.getElementById('aCoverAlt').value=a.coverAlt||'';
