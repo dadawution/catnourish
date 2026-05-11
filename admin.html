@@ -257,7 +257,7 @@
 <div id="setupScreen">
   <div class="setup-box">
     <div class="setup-logo">貓咪照護飲食誌</div>
-    <div class="setup-sub">Cat Nourish Journal 後台管理系統</div>
+    <div class="setup-sub">Cat Care Journal 後台管理系統</div>
     <h2>🔐 連接 GitHub 設定</h2>
     <div class="setup-field"><label>GitHub Token</label><input type="password" id="cfgToken" placeholder="ghp_xxxxxxxxxxxx"><div class="setup-hint">Settings → Developer settings → Personal access tokens → 勾選 repo 權限</div></div>
     <div class="setup-field"><label>GitHub 使用者名稱</label><input type="text" id="cfgOwner" placeholder="dadawution"></div>
@@ -874,7 +874,7 @@ function buildPromptText(){
   const tag=document.getElementById('aTag')?document.getElementById('aTag').value:'飲食照護';
   const type=document.getElementById('aType')?document.getElementById('aType').value:'知識型';
   const topic=document.getElementById('aTopic')?document.getElementById('aTopic').value:'[請填入主題]';
-  var lines=['你是貓咪照護飲食誌（Cat Nourish Journal）的內容編輯，獨立第三方貓咪飲食照護知識站，不隸屬任何品牌。',''];
+  var lines=['你是貓咪照護飲食誌（Cat Care Journal）的內容編輯，獨立第三方貓咪飲食照護知識站，不隸屬任何品牌。',''];
   if(tone)lines.push('語氣風格：'+tone);
   if(audience)lines.push('目標讀者：'+audience);
   if(ending)lines.push('結尾要求：'+ending);
