@@ -1055,14 +1055,16 @@ function renderHome() {
   const fg = document.getElementById('featuredGrid');
   const sfg = document.getElementById('subFeaturedGrid');
   if (articles.length > 0) {
-    fg.innerHTML = `<a class="featured-card" href="${articles[0].slug?'articles/'+articles[0].slug+'.html':'#'}" style="text-decoration:none">
+    const publishedForFeatured = articles.filter(a => !a.draft);
+    if(!publishedForFeatured[0]){fg.innerHTML='';return;}
+    fg.innerHTML = `<a class="featured-card" href="${publishedForFeatured[0].slug?'articles/'+publishedForFeatured[0].slug+'.html':'#'}" style="text-decoration:none">
       <div class="featured-card-content">
-        <div class="featured-card-cat">${articles[0].tag.toUpperCase()}</div>
-        <div class="featured-card-title">${articles[0].title}</div>
-        <div class="featured-card-excerpt">${articles[0].excerpt}</div>
+        <div class="featured-card-cat">${publishedForFeatured[0].tag.toUpperCase()}</div>
+        <div class="featured-card-title">${publishedForFeatured[0].title}</div>
+        <div class="featured-card-excerpt">${publishedForFeatured[0].excerpt}</div>
         <div class="featured-card-arrow">→</div>
       </div>
-    </a>` + (articles[1] ? `<a class="featured-card" href="${articles[1].slug?'articles/'+articles[1].slug+'.html':'#'}" style="background:var(--amber);text-decoration:none"><div class="featured-card-content" style="position:relative"><div class="featured-card-cat" style="color:rgba(255,255,255,0.7)">${articles[1].tag.toUpperCase()}</div><div class="featured-card-title">${articles[1].title}</div><div class="featured-card-excerpt">${articles[1].excerpt}</div><div class="featured-card-arrow">→</div></div></a>` : '');
+    </a>` + (publishedForFeatured[1] ? `<a class="featured-card" href="${publishedForFeatured[1].slug?'articles/'+articles[1].slug+'.html':'#'}" style="background:var(--amber);text-decoration:none"><div class="featured-card-content" style="position:relative"><div class="featured-card-cat" style="color:rgba(255,255,255,0.7)">${publishedForFeatured[1].tag.toUpperCase()}</div><div class="featured-card-title">${publishedForFeatured[1].title}</div><div class="featured-card-excerpt">${publishedForFeatured[1].excerpt}</div><div class="featured-card-arrow">→</div></div></a>` : '');
   }
   if (articles.length > 2) {
     sfg.innerHTML = articles.slice(2, 4).map(a => articleCardHTML(a)).join('');
@@ -1106,7 +1108,7 @@ function openArticle(id) {
   const a = articles.find(x => x.id === id);
   if (!a) return;
   currentArticleId = id;
-  const related = articles.filter(x => x.id !== id).slice(0, 3);
+  const related = articles.filter(x => x.id !== id && !x.draft).slice(0, 3);
   const main = document.getElementById('articleMain');
   main.innerHTML = `
     <div class="article-breadcrumb">
@@ -1168,7 +1170,7 @@ function openArticle(id) {
         ${['飲食照護','熟齡貓照護','副食與營養','品牌觀點','常見問題'].map(t => `
         <div class="sidebar-topic" onclick="filterAndGo('${t}')">
           <span>${t}</span>
-          <span>${articles.filter(x => x.tag === t).length} 篇</span>
+          <span>${articles.filter(x => x.tag === t && !x.draft).length} 篇</span>
         </div>`).join('')}
       </div>
     </div>
@@ -1209,7 +1211,7 @@ function renderFaqPage() {
 // ══════════════════════════════
 function renderProductRelated() {
   const el = document.getElementById('productRelated');
-  el.innerHTML = articles.filter(a => a.tag === '副食與營養' || a.tag === '熟齡貓照護').slice(0, 3).map(a => articleCardHTML(a)).join('');
+  el.innerHTML = articles.filter(a => (a.tag === '副食與營養' || a.tag === '熟齡貓照護') && !a.draft).slice(0, 3).map(a => articleCardHTML(a)).join('');
 }
 
 // ══════════════════════════════
