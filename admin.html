@@ -176,6 +176,14 @@
     .tb-select{padding:5px 8px;border:1px solid var(--border);background:white;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;color:var(--ink-2);transition:all .15s;outline:none}
     .tb-select:hover{background:var(--teal-light);border-color:var(--teal);color:var(--teal)}
     .color-swatch{display:inline-block;width:12px;height:12px;border:1px solid #ccc;border-radius:2px;vertical-align:middle}
+    /* Color popup palette */
+    .color-popup{position:absolute;background:white;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px;z-index:200;min-width:200px}
+    .color-popup-swatches{display:flex;gap:6px;margin-bottom:6px}
+    .color-swatch-btn{width:28px;height:28px;border-radius:6px;border:1px solid rgba(0,0,0,.1);cursor:pointer;padding:0;transition:transform .1s}
+    .color-swatch-btn:hover{transform:scale(1.1);border-color:var(--ink-2)}
+    .color-popup-divider{border-top:1px solid var(--border);margin:6px 0}
+    .color-popup-item{display:block;width:100%;text-align:left;padding:6px 8px;background:none;border:none;font-size:.82rem;color:var(--ink-2);cursor:pointer;border-radius:5px;font-family:inherit}
+    .color-popup-item:hover{background:var(--warm);color:var(--ink)}
     .editor-label{font-size:.78rem;font-weight:500;color:var(--ink-2);margin-bottom:5px;display:block}
     .preview-box{background:var(--warm);border:1px solid var(--border);border-radius:8px;padding:16px;min-height:280px;font-size:.875rem;line-height:1.8;color:var(--ink);overflow-y:auto;max-height:500px}
     .preview-box h2{font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:700;margin:20px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
@@ -344,6 +352,11 @@
           <label class="editor-label">文章內容</label>
           <div class="editor-toolbar">
             <div class="tb-row">
+              <span class="tb-label">編輯</span>
+              <button class="tb-btn" onclick="tbDoUndo()" title="復原 (Cmd+Z / Ctrl+Z)">↶ 上一步</button>
+              <button class="tb-btn" onclick="tbDoRedo()" title="重做 (Cmd+Shift+Z / Ctrl+Y)">↷ 下一步</button>
+            </div>
+            <div class="tb-row">
               <span class="tb-label">段落</span>
               <button class="tb-btn" onclick="tbInsert('## ','')">H2 大標</button>
               <button class="tb-btn" onclick="tbInsert('### ','')">H3 小標</button>
@@ -352,15 +365,16 @@
             </div>
             <div class="tb-row">
               <span class="tb-label">文字</span>
-              <button class="tb-btn" onclick="tbInsert('**','**')"><b>B</b> 粗體</button>
-              <button class="tb-btn" onclick="tbInsert('*','*')"><i>I</i> 斜體</button>
-              <button class="tb-btn" onclick="tbInsertUnderline()" style="text-decoration:underline dotted;text-underline-offset:2px">U 底線</button>
+              <button class="tb-btn" onclick="tbWrapInline('**','**','文字')" title="再按一次取消"><b>B</b> 粗體</button>
+              <button class="tb-btn" onclick="tbWrapInline('*','*','文字')" title="再按一次取消"><i>I</i> 斜體</button>
+              <button class="tb-btn" onclick="tbInsertUnderline()" style="text-decoration:underline dotted;text-underline-offset:2px" title="再按一次取消">U 底線</button>
               <select class="tb-select" onchange="tbInsertSize(this)">
                 <option value="">字級 ▾</option>
                 <option value="0.85em">小</option>
                 <option value="1em">標準</option>
                 <option value="1.15em">大</option>
                 <option value="1.3em">特大</option>
+                <option value="remove">⬜ 移除字級</option>
               </select>
               <select class="tb-select" onchange="tbInsertFont(this)">
                 <option value="">字型 ▾</option>
@@ -368,9 +382,10 @@
                 <option value="serif">明體</option>
                 <option value="mono">等寬</option>
                 <option value="round">圓體</option>
+                <option value="remove">⬜ 移除字型</option>
               </select>
-              <button class="tb-btn tb-color-btn" id="textColorBtn" onclick="tbOpenColor('text')"><span class="color-swatch" id="textColorSwatch" style="background:#1a1410"></span>字色</button>
-              <button class="tb-btn tb-color-btn" id="bgColorBtn" onclick="tbOpenColor('bg')"><span class="color-swatch" id="bgColorSwatch" style="background:#fff59d"></span>底色</button>
+              <button class="tb-btn tb-color-btn" id="textColorBtn" onclick="tbOpenColor('text')"><span class="color-swatch" id="textColorSwatch" style="background:#2d6e6e"></span>字色 ▾</button>
+              <button class="tb-btn tb-color-btn" id="bgColorBtn" onclick="tbOpenColor('bg')"><span class="color-swatch" id="bgColorSwatch" style="background:#fff59d"></span>底色 ▾</button>
               <input type="color" id="hiddenColorPicker" style="display:none" onchange="tbApplyColor(this.value)">
             </div>
             <div class="tb-row">
@@ -381,6 +396,8 @@
               <button class="tb-btn" onclick="tbInsertNote()" style="background:var(--amber-light);color:var(--amber);border-color:var(--amber)">💡 補充</button>
             </div>
           </div>
+          <!-- Color popup palette (positioned via JS) -->
+          <div id="colorPopup" class="color-popup" style="display:none"></div>
           <div class="editor-wrap">
             <div>
               <textarea id="aBody" placeholder="點上方按鈕插入格式，或直接輸入..." oninput="updatePreview()" style="min-height:320px;margin-bottom:0"></textarea>
@@ -400,6 +417,7 @@
         <div class="save-status" id="pubStatus"></div>
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="clearForm()">清除</button>
+          <button class="btn btn-ghost" id="closeEditBtn" onclick="closeEditor()" style="display:none">✕ 關閉編輯</button>
           <button class="btn" id="draftBtn" onclick="saveDraft()" style="background:var(--amber-light);color:var(--amber);border:1px solid var(--amber)">💾 儲存草稿</button>
           <button class="btn btn-primary" id="pubBtn" onclick="publishArticle()">📤 發布到 GitHub</button>
         </div>
@@ -1225,7 +1243,7 @@ async function publishArticle(){
     setSaveStatus('pubStatus','saving','⏳ 更新 Sitemap...');
     await updateSitemap();
 
-    clearForm();renderArticleList();
+    clearStatusAndRenderList(slug, articleData.id, isEditing);
     const articleUrl='https://catcare.tw/articles/'+slug+'.html';
     setSaveStatus('pubStatus','ok','✅ '+(isEditing?'更新':'發布')+'成功！<a href="'+articleUrl+'" target="_blank" style="margin-left:8px;color:var(--teal)">查看文章 ↗</a>');
     // Clear local draft if exists
@@ -1235,13 +1253,38 @@ async function publishArticle(){
   }catch(e){setSaveStatus('pubStatus','err','❌ '+(isEditing?'更新':'發布')+'失敗：'+e.message);}
   document.getElementById('pubBtn').disabled=false;
 }
+
+// After save, stay on this article: refresh list, update edit state, but don't clear form
+function clearStatusAndRenderList(slug, articleId, wasEditing){
+  // Refresh the article list (in case title/tag changed)
+  renderArticleList();
+  // Make sure editingId is set to the just-saved article id
+  editingId = articleId;
+  // Update slug field with the actual saved slug (in case it was auto-generated)
+  document.getElementById('aSlug').value = slug;
+  // Update UI labels to show we're now editing this article
+  document.getElementById('pubBtn').textContent = '✏️ 更新文章';
+  document.getElementById('formModeLabel').textContent = '✏️ 編輯文章';
+  // Show the close-editor button (it's hidden by default for new-article mode)
+  const closeBtn = document.getElementById('closeEditBtn');
+  if (closeBtn) closeBtn.style.display = '';
+}
 function clearForm(){
   ['aTopic','aTitle','aSlug','aExcerpt','aCover','aCoverAlt','aBody','aTags','aFaq'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('aEmoji').value='📝';
   editingId=null;
   document.getElementById('pubBtn').textContent='📤 發布到 GitHub';
   document.getElementById('formModeLabel').textContent='✨ AI 輔助文章生成';
+  // Hide the close-editor button when not editing
+  const closeBtn = document.getElementById('closeEditBtn');
+  if (closeBtn) closeBtn.style.display = 'none';
   updatePreview();
+}
+
+// "Close editor" — clear form and return to article list
+function closeEditor(){
+  clearForm();
+  switchTab('list');
 }
 
 // ── DRAFT ──
@@ -1312,8 +1355,15 @@ async function saveDraftToGitHub() {
       articles.unshift(draftArticle);
     }
     await putFile(ARTICLES_PATH, articles, sha, `儲存草稿：${title}`);
-    clearForm(); renderArticleList();
-    showToast('💾 草稿已儲存！可在文章列表找到');
+    // Stay on article: refresh list, update edit state
+    renderArticleList();
+    editingId = draftArticle.id;
+    document.getElementById('aSlug').value = slug;
+    document.getElementById('pubBtn').textContent = '✏️ 更新文章';
+    document.getElementById('formModeLabel').textContent = '✏️ 編輯文章（草稿）';
+    const closeBtn = document.getElementById('closeEditBtn');
+    if (closeBtn) closeBtn.style.display = '';
+    showToast('💾 草稿已儲存！');
   } catch(e) { showToast('❌ 儲存失敗：' + e.message); }
   document.getElementById('draftBtn').disabled = false;
 }
@@ -1362,6 +1412,9 @@ function editArticle(id){
   // Update UI
   document.getElementById('pubBtn').textContent='✏️ 更新文章';
   document.getElementById('formModeLabel').textContent='✏️ 編輯文章';
+  // Show the close-editor button when in edit mode
+  const closeBtn = document.getElementById('closeEditBtn');
+  if (closeBtn) closeBtn.style.display = '';
   updatePreview();
   // Switch to new tab and scroll to top
   switchTab('new');
@@ -1477,16 +1530,90 @@ function hideSaveStatus(id){document.getElementById(id).className='save-status';
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 
 // ── EDITOR TOOLBAR ──
+// ── EDITOR TOOLBAR ──
+// Insert text at given range using execCommand so browser tracks undo history
+function insertTextAt(ta, start, end, text) {
+  ta.focus();
+  ta.setSelectionRange(start, end);
+  document.execCommand('insertText', false, text);
+}
+
 function tbInsert(before, after) {
   const ta = document.getElementById('aBody');
   const start = ta.selectionStart, end = ta.selectionEnd;
   const selected = ta.value.slice(start, end);
-  const prefix = (before.startsWith('\n') || start === 0 || ta.value[start-1] === '\n') ? '' : '\n';
+  const prefix = (before.startsWith('\n') || start === 0 || ta.value[start - 1] === '\n') ? '' : '\n';
   const insertion = prefix + before + selected + after;
-  ta.value = ta.value.slice(0, start) + insertion + ta.value.slice(end);
+  insertTextAt(ta, start, end, insertion);
   const cursor = start + insertion.length;
   ta.setSelectionRange(cursor, cursor);
+  updatePreview();
+}
+
+// Wrap-or-unwrap (toggle). Detects if selection already wrapped, then strips.
+function tbWrapInline(openTag, closeTag, placeholder) {
+  const ta = document.getElementById('aBody');
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const selected = ta.value.slice(start, end);
+
+  // Case 1: selection itself is already wrapped → strip
+  if (selected.length > openTag.length + closeTag.length
+      && selected.startsWith(openTag) && selected.endsWith(closeTag)
+      && !isItalicFalseMatch(openTag, selected)) {
+    const unwrapped = selected.slice(openTag.length, selected.length - closeTag.length);
+    insertTextAt(ta, start, end, unwrapped);
+    ta.setSelectionRange(start, start + unwrapped.length);
+    updatePreview();
+    return;
+  }
+
+  // Case 2: chars surrounding the selection match the wrap → strip those
+  const before = ta.value.slice(Math.max(0, start - openTag.length), start);
+  const after = ta.value.slice(end, end + closeTag.length);
+  if (before === openTag && after === closeTag
+      && !isItalicSurroundedByBold(ta.value, start, end, openTag)) {
+    insertTextAt(ta, start - openTag.length, end + closeTag.length, selected);
+    ta.setSelectionRange(start - openTag.length, start - openTag.length + selected.length);
+    updatePreview();
+    return;
+  }
+
+  // Case 3: not wrapped → wrap it
+  const text = selected || placeholder;
+  const insertion = openTag + text + closeTag;
+  insertTextAt(ta, start, end, insertion);
+  if (!selected) {
+    ta.setSelectionRange(start + openTag.length, start + openTag.length + text.length);
+  } else {
+    const cursor = start + insertion.length;
+    ta.setSelectionRange(cursor, cursor);
+  }
+  updatePreview();
+}
+
+// For italic '*...*', make sure we don't accidentally match '**...**' (bold)
+function isItalicFalseMatch(openTag, text) {
+  if (openTag !== '*') return false;
+  return text.startsWith('**') || text.endsWith('**');
+}
+function isItalicSurroundedByBold(value, start, end, openTag) {
+  if (openTag !== '*') return false;
+  const beforeBefore = start >= 2 ? value[start - 2] : '';
+  const afterAfter = value[end + 1] || '';
+  return beforeBefore === '*' || afterAfter === '*';
+}
+
+// Undo / Redo via execCommand (works because all inserts use insertText)
+function tbDoUndo() {
+  const ta = document.getElementById('aBody');
   ta.focus();
+  document.execCommand('undo');
+  updatePreview();
+}
+function tbDoRedo() {
+  const ta = document.getElementById('aBody');
+  ta.focus();
+  document.execCommand('redo');
   updatePreview();
 }
 
@@ -1495,50 +1622,33 @@ function tbInsertNote() {
   const start = ta.selectionStart, end = ta.selectionEnd;
   const selected = ta.value.slice(start, end);
   const bodyText = selected || '在這裡輸入補充內容';
-  const prefix = (start === 0 || ta.value[start-1] === '\n') ? '' : '\n';
+  const prefix = (start === 0 || ta.value[start - 1] === '\n') ? '' : '\n';
   const head = '<aside class="note">\n<div class="note-label">💡 補充</div>\n<div>';
   const tail = '</div>\n</aside>\n';
   const insertion = prefix + head + bodyText + tail;
-  ta.value = ta.value.slice(0, start) + insertion + ta.value.slice(end);
+  insertTextAt(ta, start, end, insertion);
   if (!selected) {
-    // Select the placeholder body text so user can type to replace
     const bodyStart = start + prefix.length + head.length;
-    const bodyEnd = bodyStart + bodyText.length;
-    ta.setSelectionRange(bodyStart, bodyEnd);
+    ta.setSelectionRange(bodyStart, bodyStart + bodyText.length);
   } else {
     const cursor = start + insertion.length;
     ta.setSelectionRange(cursor, cursor);
   }
-  ta.focus();
   updatePreview();
 }
 
-// ── INLINE FORMATTING (wrap selection in HTML tag, or insert placeholder) ──
-function tbWrapInline(openTag, closeTag, placeholder) {
-  const ta = document.getElementById('aBody');
-  const start = ta.selectionStart, end = ta.selectionEnd;
-  const selected = ta.value.slice(start, end);
-  const text = selected || placeholder;
-  const insertion = openTag + text + closeTag;
-  ta.value = ta.value.slice(0, start) + insertion + ta.value.slice(end);
-  if (!selected) {
-    const innerStart = start + openTag.length;
-    ta.setSelectionRange(innerStart, innerStart + text.length);
-  } else {
-    const cursor = start + insertion.length;
-    ta.setSelectionRange(cursor, cursor);
-  }
-  ta.focus();
-  updatePreview();
-}
-
+// ── INLINE FORMATTING HELPERS (wrappers around tbWrapInline) ──
 function tbInsertUnderline() {
   tbWrapInline('<u>', '</u>', '文字');
 }
 
 function tbInsertSize(select) {
-  const size = select.value;
-  if (size) tbWrapInline(`<span style="font-size:${size}">`, '</span>', '文字');
+  const v = select.value;
+  if (v === 'remove') {
+    tbStripInlineStyle('font-size');
+  } else if (v) {
+    tbWrapInline(`<span style="font-size:${v}">`, '</span>', '文字');
+  }
   select.selectedIndex = 0;
 }
 
@@ -1551,31 +1661,132 @@ const FONT_MAP = {
 
 function tbInsertFont(select) {
   const key = select.value;
-  if (key && FONT_MAP[key]) {
+  if (key === 'remove') {
+    tbStripInlineStyle('font-family');
+  } else if (key && FONT_MAP[key]) {
     tbWrapInline(`<span style="font-family:${FONT_MAP[key]}">`, '</span>', '文字');
   }
   select.selectedIndex = 0;
 }
 
-// ── COLOR PICKER (text color & background highlight) ──
-let lastTextColor = '#1a1410';
+// Strip <span style="font-size:..."> or <span style="font-family:..."> wrappers from selection
+function tbStripInlineStyle(property) {
+  const ta = document.getElementById('aBody');
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const selected = ta.value.slice(start, end);
+  if (!selected) return;
+  const re = new RegExp(`<span style="${property}:[^"]+">([\\s\\S]+?)<\\/span>`, 'g');
+  const stripped = selected.replace(re, '$1');
+  if (stripped !== selected) {
+    insertTextAt(ta, start, end, stripped);
+    ta.setSelectionRange(start, start + stripped.length);
+    updatePreview();
+  }
+}
+
+// ── COLOR PICKER (popup palette + custom picker) ──
+let lastTextColor = '#2d6e6e';
 let lastBgColor = '#fff59d';
 let pendingColorState = null;
 
+const COLOR_PRESETS = {
+  text: ['#2d6e6e', '#c47c2e', '#5a7a5a', '#c0392b', '#8c7d70'],
+  bg:   ['#fff59d', '#c8e6c9', '#bbdefb', '#f8bbd0', '#ffe0b2']
+};
+
+// Open the color popup near the clicked button
 function tbOpenColor(type) {
+  // Capture textarea selection BEFORE opening popup (popup click would shift focus)
   const ta = document.getElementById('aBody');
   pendingColorState = {
     start: ta.selectionStart,
     end: ta.selectionEnd,
     type: type
   };
+
+  const popup = document.getElementById('colorPopup');
+  // Build swatch rows
+  const swatchesHtml = COLOR_PRESETS[type].map(c =>
+    `<button class="color-swatch-btn" style="background:${c}" data-hex="${c}" onmousedown="event.preventDefault()" onclick="tbApplyPresetColor('${c}')" title="${c}"></button>`
+  ).join('');
+  popup.innerHTML = `
+    <div class="color-popup-swatches">${swatchesHtml}</div>
+    <div class="color-popup-divider"></div>
+    <button class="color-popup-item" onmousedown="event.preventDefault()" onclick="tbRemoveColor()">⬜ 移除顏色</button>
+    <button class="color-popup-item" onmousedown="event.preventDefault()" onclick="tbOpenSystemPicker()">🎨 自訂顏色 →</button>
+  `;
+  // Position below the button
+  const btn = document.getElementById(type === 'text' ? 'textColorBtn' : 'bgColorBtn');
+  const rect = btn.getBoundingClientRect();
+  popup.style.left = (rect.left + window.scrollX) + 'px';
+  popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  popup.style.display = 'block';
+
+  // Bind outside-click to close (next tick to avoid catching the opening click)
+  setTimeout(() => {
+    document.addEventListener('mousedown', closeColorPopupOnOutside);
+  }, 0);
+}
+
+function closeColorPopupOnOutside(e) {
+  const popup = document.getElementById('colorPopup');
+  if (popup && !popup.contains(e.target)) {
+    closeColorPopup();
+  }
+}
+
+function closeColorPopup() {
+  const popup = document.getElementById('colorPopup');
+  if (popup) popup.style.display = 'none';
+  document.removeEventListener('mousedown', closeColorPopupOnOutside);
+}
+
+// Apply a preset color from the popup swatches
+function tbApplyPresetColor(hex) {
+  closeColorPopup();
+  if (!pendingColorState) return;
+  applyColorToSelection(hex);
+}
+
+// Open the system color picker (for custom colors)
+function tbOpenSystemPicker() {
+  closeColorPopup();
+  if (!pendingColorState) return;
   const picker = document.getElementById('hiddenColorPicker');
-  picker.value = (type === 'text') ? lastTextColor : lastBgColor;
+  picker.value = pendingColorState.type === 'text' ? lastTextColor : lastBgColor;
   picker.click();
 }
 
+// Remove existing color wrapping from selection
+function tbRemoveColor() {
+  closeColorPopup();
+  if (!pendingColorState) return;
+  const { start, end, type } = pendingColorState;
+  const ta = document.getElementById('aBody');
+  const selected = ta.value.slice(start, end);
+  if (!selected) { pendingColorState = null; return; }
+  let stripped;
+  if (type === 'text') {
+    stripped = selected.replace(/<span style="color:[^"]+">([\s\S]+?)<\/span>/g, '$1');
+  } else {
+    stripped = selected.replace(/<mark style="background:[^"]+">([\s\S]+?)<\/mark>/g, '$1');
+  }
+  if (stripped !== selected) {
+    insertTextAt(ta, start, end, stripped);
+    ta.setSelectionRange(start, start + stripped.length);
+    updatePreview();
+  }
+  pendingColorState = null;
+}
+
+// Called from the hidden color input's onchange (the custom picker)
 function tbApplyColor(hex) {
   if (!pendingColorState) return;
+  applyColorToSelection(hex);
+}
+
+// Wraps selection with color tag and updates swatch memory
+function applyColorToSelection(hex) {
   const { start, end, type } = pendingColorState;
   const ta = document.getElementById('aBody');
   const selected = ta.value.slice(start, end);
@@ -1585,24 +1796,24 @@ function tbApplyColor(hex) {
     openTag = `<span style="color:${hex}">`;
     closeTag = '</span>';
     lastTextColor = hex;
-    document.getElementById('textColorSwatch').style.background = hex;
+    const sw = document.getElementById('textColorSwatch');
+    if (sw) sw.style.background = hex;
   } else {
     openTag = `<mark style="background:${hex}">`;
     closeTag = '</mark>';
     lastBgColor = hex;
-    document.getElementById('bgColorSwatch').style.background = hex;
+    const sw = document.getElementById('bgColorSwatch');
+    if (sw) sw.style.background = hex;
   }
   const insertion = openTag + text + closeTag;
-  ta.value = ta.value.slice(0, start) + insertion + ta.value.slice(end);
+  insertTextAt(ta, start, end, insertion);
   if (!selected) {
-    const innerStart = start + openTag.length;
-    ta.setSelectionRange(innerStart, innerStart + text.length);
+    ta.setSelectionRange(start + openTag.length, start + openTag.length + text.length);
   } else {
     const cursor = start + insertion.length;
     ta.setSelectionRange(cursor, cursor);
   }
   pendingColorState = null;
-  ta.focus();
   updatePreview();
 }
 
@@ -1679,7 +1890,8 @@ function insertImageToBody() {
   const tag = '\n![' + caption + '](' + pendingImgUrl + ')\n';
   const ta = document.getElementById('aBody');
   const pos = (savedCursorPos >= 0) ? savedCursorPos : ta.value.length;
-  ta.value = ta.value.slice(0, pos) + tag + ta.value.slice(pos);
+  insertTextAt(ta, pos, pos, tag);
+  ta.setSelectionRange(pos + tag.length, pos + tag.length);
   savedCursorPos = -1;
   closeCaptionModal();
   updatePreview();
@@ -1768,7 +1980,8 @@ function updateLink() {
   const found = findNthLink(ta.value, editingLinkIdx);
   if (!found) { showToast('找不到連結，請重試'); closeLinkEditModal(); return; }
   const replacement = '[' + (newText || found.text) + '](' + newUrl + ')';
-  ta.value = ta.value.slice(0, found.start) + replacement + ta.value.slice(found.end);
+  insertTextAt(ta, found.start, found.end, replacement);
+  ta.setSelectionRange(found.start + replacement.length, found.start + replacement.length);
   closeLinkEditModal();
   updatePreview();
   showToast('✅ 連結已更新');
@@ -1778,7 +1991,8 @@ function removeLink() {
   const ta = document.getElementById('aBody');
   const found = findNthLink(ta.value, editingLinkIdx);
   if (!found) { showToast('找不到連結，請重試'); closeLinkEditModal(); return; }
-  ta.value = ta.value.slice(0, found.start) + found.text + ta.value.slice(found.end);
+  insertTextAt(ta, found.start, found.end, found.text);
+  ta.setSelectionRange(found.start + found.text.length, found.start + found.text.length);
   closeLinkEditModal();
   updatePreview();
   showToast('✅ 連結已移除，文字保留');
@@ -1874,7 +2088,8 @@ function insertLink() {
   const tag = '[' + displayText + '](' + url + ')';
   const ta = document.getElementById('aBody');
   const { start, end } = savedLinkCursor;
-  ta.value = ta.value.slice(0, start) + tag + ta.value.slice(end);
+  insertTextAt(ta, start, end, tag);
+  ta.setSelectionRange(start + tag.length, start + tag.length);
   closeLinkModal();
   updatePreview();
   ta.focus();
