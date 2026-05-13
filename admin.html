@@ -168,9 +168,14 @@
 
     /* EDITOR */
     .editor-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-    .editor-toolbar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
-    .tb-btn{padding:5px 10px;border:1px solid var(--border);background:white;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;color:var(--ink-2);transition:all .15s}
+    .editor-toolbar{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+    .tb-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+    .tb-label{font-size:.7rem;color:var(--muted);min-width:38px;font-weight:500}
+    .tb-btn{padding:5px 10px;border:1px solid var(--border);background:white;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;color:var(--ink-2);transition:all .15s;display:inline-flex;align-items:center;gap:4px}
     .tb-btn:hover{background:var(--teal-light);border-color:var(--teal);color:var(--teal)}
+    .tb-select{padding:5px 8px;border:1px solid var(--border);background:white;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;color:var(--ink-2);transition:all .15s;outline:none}
+    .tb-select:hover{background:var(--teal-light);border-color:var(--teal);color:var(--teal)}
+    .color-swatch{display:inline-block;width:12px;height:12px;border:1px solid #ccc;border-radius:2px;vertical-align:middle}
     .editor-label{font-size:.78rem;font-weight:500;color:var(--ink-2);margin-bottom:5px;display:block}
     .preview-box{background:var(--warm);border:1px solid var(--border);border-radius:8px;padding:16px;min-height:280px;font-size:.875rem;line-height:1.8;color:var(--ink);overflow-y:auto;max-height:500px}
     .preview-box h2{font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:700;margin:20px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
@@ -181,6 +186,9 @@
     .preview-box figure img{max-width:100%;border-radius:6px}
     .preview-box figcaption{font-size:.75rem;color:var(--muted);margin-top:4px}
     .preview-box hr{border:none;border-top:1px solid var(--border);margin:16px 0}
+    .preview-box u{text-decoration:underline dotted;text-underline-offset:3px}
+    .preview-box em{font-style:italic}
+    .preview-box mark{padding:0 2px;border-radius:2px}
     .preview-box .note{background:var(--amber-light);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0;font-size:.85rem;color:var(--ink-2);line-height:1.8}
     .preview-box .note .note-label{font-size:.72rem;font-weight:600;color:var(--amber);margin-bottom:4px;letter-spacing:.5px}
     .preview-box .note a{color:var(--amber)}
@@ -335,15 +343,43 @@
         <div class="form-group">
           <label class="editor-label">文章內容</label>
           <div class="editor-toolbar">
-            <button class="tb-btn" onclick="tbInsert('## ','')">H2 大標</button>
-            <button class="tb-btn" onclick="tbInsert('### ','')">H3 小標</button>
-            <button class="tb-btn" onclick="tbInsert('- ','')">・清單</button>
-            <button class="tb-btn" onclick="tbInsert('**','**')"><b>粗體</b></button>
-            <button class="tb-btn" onclick="tbInsertNote()" style="background:var(--amber-light);color:var(--amber);border-color:var(--amber)">💡 補充</button>
-            <button class="tb-btn" onclick="tbInsert('\n---\n','')">— 分隔</button>
-            <button class="tb-btn" onclick="openImgPicker()">📷 插入圖片</button>
-            <button class="tb-btn" onclick="openLinkModal()">🔗 插入連結</button>
-            <button class="tb-btn" onclick="openBatchModal()">🔄 批次替換連結</button>
+            <div class="tb-row">
+              <span class="tb-label">段落</span>
+              <button class="tb-btn" onclick="tbInsert('## ','')">H2 大標</button>
+              <button class="tb-btn" onclick="tbInsert('### ','')">H3 小標</button>
+              <button class="tb-btn" onclick="tbInsert('- ','')">・清單</button>
+              <button class="tb-btn" onclick="tbInsert('\n---\n','')">— 分隔</button>
+            </div>
+            <div class="tb-row">
+              <span class="tb-label">文字</span>
+              <button class="tb-btn" onclick="tbInsert('**','**')"><b>B</b> 粗體</button>
+              <button class="tb-btn" onclick="tbInsert('*','*')"><i>I</i> 斜體</button>
+              <button class="tb-btn" onclick="tbInsertUnderline()" style="text-decoration:underline dotted;text-underline-offset:2px">U 底線</button>
+              <select class="tb-select" onchange="tbInsertSize(this)">
+                <option value="">字級 ▾</option>
+                <option value="0.85em">小</option>
+                <option value="1em">標準</option>
+                <option value="1.15em">大</option>
+                <option value="1.3em">特大</option>
+              </select>
+              <select class="tb-select" onchange="tbInsertFont(this)">
+                <option value="">字型 ▾</option>
+                <option value="sans">無襯線</option>
+                <option value="serif">明體</option>
+                <option value="mono">等寬</option>
+                <option value="round">圓體</option>
+              </select>
+              <button class="tb-btn tb-color-btn" id="textColorBtn" onclick="tbOpenColor('text')"><span class="color-swatch" id="textColorSwatch" style="background:#1a1410"></span>字色</button>
+              <button class="tb-btn tb-color-btn" id="bgColorBtn" onclick="tbOpenColor('bg')"><span class="color-swatch" id="bgColorSwatch" style="background:#fff59d"></span>底色</button>
+              <input type="color" id="hiddenColorPicker" style="display:none" onchange="tbApplyColor(this.value)">
+            </div>
+            <div class="tb-row">
+              <span class="tb-label">插入</span>
+              <button class="tb-btn" onclick="openImgPicker()">📷 圖片</button>
+              <button class="tb-btn" onclick="openLinkModal()">🔗 連結</button>
+              <button class="tb-btn" onclick="openBatchModal()">🔄 批次連結</button>
+              <button class="tb-btn" onclick="tbInsertNote()" style="background:var(--amber-light);color:var(--amber);border-color:var(--amber)">💡 補充</button>
+            </div>
           </div>
           <div class="editor-wrap">
             <div>
@@ -1005,8 +1041,9 @@ function renderBodyHtml(body){
   let i=0;
   const imgRe=/^!\[([^\]]*)\]\(([^)]+)\)$/;
   function renderInline(text){
-    const bold=text.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
-    return bold.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,t,u)=>{
+    let r=text.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+    r=r.replace(/\*([^*\n]+)\*/g,'<em>$1</em>');
+    return r.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,t,u)=>{
       const isInt=u.startsWith('../')||u.startsWith('./')||u.startsWith('/');
       return`<a href="${u}"${isInt?'':' target="_blank" rel="noopener noreferrer"'}>${t}</a>`;
     });
@@ -1476,6 +1513,99 @@ function tbInsertNote() {
   updatePreview();
 }
 
+// ── INLINE FORMATTING (wrap selection in HTML tag, or insert placeholder) ──
+function tbWrapInline(openTag, closeTag, placeholder) {
+  const ta = document.getElementById('aBody');
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const selected = ta.value.slice(start, end);
+  const text = selected || placeholder;
+  const insertion = openTag + text + closeTag;
+  ta.value = ta.value.slice(0, start) + insertion + ta.value.slice(end);
+  if (!selected) {
+    const innerStart = start + openTag.length;
+    ta.setSelectionRange(innerStart, innerStart + text.length);
+  } else {
+    const cursor = start + insertion.length;
+    ta.setSelectionRange(cursor, cursor);
+  }
+  ta.focus();
+  updatePreview();
+}
+
+function tbInsertUnderline() {
+  tbWrapInline('<u>', '</u>', '文字');
+}
+
+function tbInsertSize(select) {
+  const size = select.value;
+  if (size) tbWrapInline(`<span style="font-size:${size}">`, '</span>', '文字');
+  select.selectedIndex = 0;
+}
+
+const FONT_MAP = {
+  sans: "'Noto Sans TC', sans-serif",
+  serif: "'Noto Serif TC', serif",
+  mono: "'SF Mono', 'Menlo', 'Courier New', monospace",
+  round: "'Yuanti TC', 'Yuanti SC', 'PingFang TC', 'Microsoft YaHei UI', sans-serif"
+};
+
+function tbInsertFont(select) {
+  const key = select.value;
+  if (key && FONT_MAP[key]) {
+    tbWrapInline(`<span style="font-family:${FONT_MAP[key]}">`, '</span>', '文字');
+  }
+  select.selectedIndex = 0;
+}
+
+// ── COLOR PICKER (text color & background highlight) ──
+let lastTextColor = '#1a1410';
+let lastBgColor = '#fff59d';
+let pendingColorState = null;
+
+function tbOpenColor(type) {
+  const ta = document.getElementById('aBody');
+  pendingColorState = {
+    start: ta.selectionStart,
+    end: ta.selectionEnd,
+    type: type
+  };
+  const picker = document.getElementById('hiddenColorPicker');
+  picker.value = (type === 'text') ? lastTextColor : lastBgColor;
+  picker.click();
+}
+
+function tbApplyColor(hex) {
+  if (!pendingColorState) return;
+  const { start, end, type } = pendingColorState;
+  const ta = document.getElementById('aBody');
+  const selected = ta.value.slice(start, end);
+  const text = selected || '文字';
+  let openTag, closeTag;
+  if (type === 'text') {
+    openTag = `<span style="color:${hex}">`;
+    closeTag = '</span>';
+    lastTextColor = hex;
+    document.getElementById('textColorSwatch').style.background = hex;
+  } else {
+    openTag = `<mark style="background:${hex}">`;
+    closeTag = '</mark>';
+    lastBgColor = hex;
+    document.getElementById('bgColorSwatch').style.background = hex;
+  }
+  const insertion = openTag + text + closeTag;
+  ta.value = ta.value.slice(0, start) + insertion + ta.value.slice(end);
+  if (!selected) {
+    const innerStart = start + openTag.length;
+    ta.setSelectionRange(innerStart, innerStart + text.length);
+  } else {
+    const cursor = start + insertion.length;
+    ta.setSelectionRange(cursor, cursor);
+  }
+  pendingColorState = null;
+  ta.focus();
+  updatePreview();
+}
+
 function updatePreview() {
   const body = document.getElementById('aBody').value;
   const prev = document.getElementById('bodyPreview');
@@ -1483,8 +1613,9 @@ function updatePreview() {
   const imgRe = /^!\[([^\]]*)\]\(([^)]+)\)$/;
   let globalLinkIdx = 0;
   function renderInline(text) {
-    const bold = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    return bold.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t, u) => {
+    let r = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    r = r.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+    return r.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t, u) => {
       const idx = globalLinkIdx++;
       return `<a href="#" data-link-idx="${idx}" onclick="handlePreviewLinkClick(event,${idx})" style="color:var(--teal);text-decoration:underline;cursor:pointer">${t}</a>`;
     });
