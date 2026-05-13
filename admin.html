@@ -181,6 +181,9 @@
     .preview-box figure img{max-width:100%;border-radius:6px}
     .preview-box figcaption{font-size:.75rem;color:var(--muted);margin-top:4px}
     .preview-box hr{border:none;border-top:1px solid var(--border);margin:16px 0}
+    .preview-box .note{background:var(--amber-light);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0;font-size:.85rem;color:var(--ink-2);line-height:1.8}
+    .preview-box .note .note-label{font-size:.72rem;font-weight:600;color:var(--amber);margin-bottom:4px;letter-spacing:.5px}
+    .preview-box .note a{color:var(--amber)}
     .preview-empty{color:#ccc;font-size:.82rem}
     /* DRAG */
     .drag-handle{cursor:grab;color:#ccc;font-size:1.1rem;padding:0 8px;flex-shrink:0;user-select:none}
@@ -336,6 +339,7 @@
             <button class="tb-btn" onclick="tbInsert('### ','')">H3 小標</button>
             <button class="tb-btn" onclick="tbInsert('- ','')">・清單</button>
             <button class="tb-btn" onclick="tbInsert('**','**')"><b>粗體</b></button>
+            <button class="tb-btn" onclick="tbInsertNote()" style="background:var(--amber-light);color:var(--amber);border-color:var(--amber)">💡 補充</button>
             <button class="tb-btn" onclick="tbInsert('\n---\n','')">— 分隔</button>
             <button class="tb-btn" onclick="openImgPicker()">📷 插入圖片</button>
             <button class="tb-btn" onclick="openLinkModal()">🔗 插入連結</button>
@@ -1007,7 +1011,15 @@ function renderBodyHtml(body){
       return`<a href="${u}"${isInt?'':' target="_blank" rel="noopener noreferrer"'}>${t}</a>`;
     });
   }
+  // Extract <aside class="note">...</aside> blocks; apply inline markdown inside
+  const asides=[];
+  body=body.replace(/<aside class="note">([\s\S]*?)<\/aside>/g,(m,inner)=>{
+    asides.push('<aside class="note">'+renderInline(inner)+'</aside>');
+    return '\n__ASIDE_NOTE_'+(asides.length-1)+'__\n';
+  });
   return body.split('\n').map(line=>{
+    const mp=line.match(/^__ASIDE_NOTE_(\d+)__$/);
+    if(mp)return asides[parseInt(mp[1])];
     if(line.startsWith('## '))return`<h2 id="sec${i++}">${renderInline(line.slice(3))}</h2>`;
     if(line.startsWith('### '))return`<h3>${renderInline(line.slice(4))}</h3>`;
     if(line.startsWith('- '))return`<li>${renderInline(line.slice(2))}</li>`;
@@ -1441,6 +1453,29 @@ function tbInsert(before, after) {
   updatePreview();
 }
 
+function tbInsertNote() {
+  const ta = document.getElementById('aBody');
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const selected = ta.value.slice(start, end);
+  const bodyText = selected || '在這裡輸入補充內容';
+  const prefix = (start === 0 || ta.value[start-1] === '\n') ? '' : '\n';
+  const head = '<aside class="note">\n<div class="note-label">💡 補充</div>\n<div>';
+  const tail = '</div>\n</aside>\n';
+  const insertion = prefix + head + bodyText + tail;
+  ta.value = ta.value.slice(0, start) + insertion + ta.value.slice(end);
+  if (!selected) {
+    // Select the placeholder body text so user can type to replace
+    const bodyStart = start + prefix.length + head.length;
+    const bodyEnd = bodyStart + bodyText.length;
+    ta.setSelectionRange(bodyStart, bodyEnd);
+  } else {
+    const cursor = start + insertion.length;
+    ta.setSelectionRange(cursor, cursor);
+  }
+  ta.focus();
+  updatePreview();
+}
+
 function updatePreview() {
   const body = document.getElementById('aBody').value;
   const prev = document.getElementById('bodyPreview');
@@ -1454,7 +1489,16 @@ function updatePreview() {
       return `<a href="#" data-link-idx="${idx}" onclick="handlePreviewLinkClick(event,${idx})" style="color:var(--teal);text-decoration:underline;cursor:pointer">${t}</a>`;
     });
   }
-  prev.innerHTML = body.split('\n').map(line => {
+  // Extract <aside class="note">...</aside> blocks first
+  let bodyProcessed = body;
+  const asides = [];
+  bodyProcessed = bodyProcessed.replace(/<aside class="note">([\s\S]*?)<\/aside>/g, (m, inner) => {
+    asides.push('<aside class="note">' + renderInline(inner) + '</aside>');
+    return '\n__ASIDE_NOTE_' + (asides.length - 1) + '__\n';
+  });
+  prev.innerHTML = bodyProcessed.split('\n').map(line => {
+    const mp = line.match(/^__ASIDE_NOTE_(\d+)__$/);
+    if (mp) return asides[parseInt(mp[1])];
     if (line.startsWith('## ')) return `<h2>${renderInline(line.slice(3))}</h2>`;
     if (line.startsWith('### ')) return `<h3>${renderInline(line.slice(4))}</h3>`;
     if (line.startsWith('- ')) return `<li style="margin-left:16px">${renderInline(line.slice(2))}</li>`;
