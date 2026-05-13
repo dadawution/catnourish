@@ -1069,23 +1069,24 @@ function articleCardHTML(a) {
 function renderHome() {
   const fg = document.getElementById('featuredGrid');
   const sfg = document.getElementById('subFeaturedGrid');
-  if (articles.length > 0) {
-    const publishedForFeatured = articles.filter(a => !a.draft);
-    if(!publishedForFeatured[0]){fg.innerHTML='';return;}
-    fg.innerHTML = `<a class="featured-card" href="${publishedForFeatured[0].slug?'articles/'+publishedForFeatured[0].slug+'.html':'#'}" style="text-decoration:none">
+  const publishedArticles = articles.filter(a => !a.draft);
+  if (publishedArticles.length > 0) {
+    if(!publishedArticles[0]){fg.innerHTML='';return;}
+    fg.innerHTML = `<a class="featured-card" href="${publishedArticles[0].slug?'articles/'+publishedArticles[0].slug+'.html':'#'}" style="text-decoration:none">
       <div class="featured-card-content">
-        <div class="featured-card-cat">${publishedForFeatured[0].tag.toUpperCase()}</div>
-        <div class="featured-card-title">${publishedForFeatured[0].title}</div>
-        <div class="featured-card-excerpt">${publishedForFeatured[0].excerpt}</div>
+        <div class="featured-card-cat">${publishedArticles[0].tag.toUpperCase()}</div>
+        <div class="featured-card-title">${publishedArticles[0].title}</div>
+        <div class="featured-card-excerpt">${publishedArticles[0].excerpt}</div>
         <div class="featured-card-arrow">→</div>
       </div>
-    </a>` + (publishedForFeatured[1] ? `<a class="featured-card" href="${publishedForFeatured[1].slug?'articles/'+articles[1].slug+'.html':'#'}" style="background:var(--amber);text-decoration:none"><div class="featured-card-content" style="position:relative"><div class="featured-card-cat" style="color:rgba(255,255,255,0.7)">${publishedForFeatured[1].tag.toUpperCase()}</div><div class="featured-card-title">${publishedForFeatured[1].title}</div><div class="featured-card-excerpt">${publishedForFeatured[1].excerpt}</div><div class="featured-card-arrow">→</div></div></a>` : '');
+    </a>` + (publishedArticles[1] ? `<a class="featured-card" href="${publishedArticles[1].slug?'articles/'+publishedArticles[1].slug+'.html':'#'}" style="background:var(--amber);text-decoration:none"><div class="featured-card-content" style="position:relative"><div class="featured-card-cat" style="color:rgba(255,255,255,0.7)">${publishedArticles[1].tag.toUpperCase()}</div><div class="featured-card-title">${publishedArticles[1].title}</div><div class="featured-card-excerpt">${publishedArticles[1].excerpt}</div><div class="featured-card-arrow">→</div></div></a>` : '');
   }
-  if (articles.length > 2) {
-    sfg.innerHTML = articles.slice(2, 4).map(a => articleCardHTML(a)).join('');
+  if (publishedArticles.length > 2) {
+    sfg.innerHTML = publishedArticles.slice(2, 4).map(a => articleCardHTML(a)).join('');
+  } else {
+    sfg.innerHTML = '';
   }
   const lg = document.getElementById('latestGrid');
-  const publishedArticles = articles.filter(a => !a.draft);
   lg.innerHTML = publishedArticles.slice(0, 3).map(a => articleCardHTML(a)).join('');
   const fl = document.getElementById('homeFaqList');
   fl.innerHTML = faqs.slice(0, 5).map((f, i) => `
