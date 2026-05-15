@@ -470,37 +470,6 @@
     /* ══════════════════════════════
        PRODUCT PAGE
     ══════════════════════════════ */
-    .product-layout { max-width: 1080px; margin: 0 auto; padding: 52px 24px 80px; }
-    .product-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; margin-bottom: 72px; }
-    .product-visual {
-      background: var(--warm); border-radius: 20px;
-      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-      font-size: 6rem;
-    }
-    .product-info {}
-    .product-badge { display: inline-block; background: var(--teal-light); color: var(--teal); font-size: 0.75rem; font-weight: 500; padding: 4px 12px; border-radius: 20px; margin-bottom: 16px; }
-    .product-name { font-family: 'Noto Serif TC', serif; font-size: 2rem; font-weight: 700; color: var(--ink); margin-bottom: 8px; line-height: 1.3; }
-    .product-tagline { font-size: 1rem; color: var(--muted); margin-bottom: 24px; }
-    .product-features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
-    .product-feature { display: flex; align-items: flex-start; gap: 10px; font-size: 0.875rem; }
-    .product-feature-icon { font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
-    .product-feature-text { color: var(--ink-2); }
-    .product-feature-text strong { color: var(--ink); display: block; font-size: 0.9rem; margin-bottom: 2px; }
-    .product-btns { display: flex; gap: 12px; flex-wrap: wrap; }
-    .btn-product-primary { padding: 13px 28px; background: var(--teal); color: white; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
-    .btn-product-secondary { padding: 13px 28px; background: var(--warm); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; cursor: pointer; font-family: inherit; }
-
-    .product-section { margin-bottom: 60px; }
-    .product-section-title { font-family: 'Noto Serif TC', serif; font-size: 1.3rem; font-weight: 700; color: var(--ink); margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-    .spec-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-    .spec-item { background: var(--warm); border-radius: 10px; padding: 18px; text-align: center; }
-    .spec-val { font-family: 'Noto Serif TC', serif; font-size: 1.5rem; font-weight: 700; color: var(--teal); margin-bottom: 4px; }
-    .spec-label { font-size: 0.78rem; color: var(--muted); }
-    .suitable-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .suitable-item { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
-    .suitable-icon { font-size: 1.2rem; flex-shrink: 0; }
-    .suitable-text strong { display: block; font-size: 0.875rem; color: var(--ink); margin-bottom: 3px; }
-    .suitable-text span { font-size: 0.78rem; color: var(--muted); }
 
     /* ══════════════════════════════
        ABOUT PAGE
@@ -623,11 +592,7 @@
       .featured-grid { grid-template-columns: 1fr; }
       .article-layout { grid-template-columns: 1fr; }
       .article-sidebar { display: none; }
-      .product-hero { grid-template-columns: 1fr; }
-      .product-visual { aspect-ratio: auto; padding: 40px; }
       .about-values { grid-template-columns: 1fr; }
-      .spec-grid { grid-template-columns: repeat(2, 1fr); }
-      .suitable-grid { grid-template-columns: 1fr; }
       .articles-grid { grid-template-columns: 1fr; }
       .brand-strip { display: none; }
       .footer-inner { grid-template-columns: 1fr; gap: 32px; }
@@ -659,7 +624,6 @@
       <li><a href="#" onclick="goPage('home');return false;">首頁</a></li>
       <li><a href="#" onclick="goPage('articles');return false;">知識文章</a></li>
       <li><a href="#" onclick="goPage('faq');return false;">常見問答</a></li>
-      <li><a href="#" onclick="goPage('product');return false;">關於產品</a></li>
       <li><a href="#" onclick="goPage('about');return false;">關於我們</a></li>
 
     </ul>
@@ -851,84 +815,6 @@
 </div>
 
 <!-- ════════════════════════════════════
-     PAGE: PRODUCT
-════════════════════════════════════ -->
-<div class="page" id="page-product">
-  <div class="product-layout">
-    <div class="product-hero">
-      <div class="product-visual">🐟</div>
-      <div class="product-info">
-        <div class="product-badge">編輯精選・低磷・低鈉</div>
-        <div class="product-name">BioNature 碧然思<br>貓用高營養天然沙丁魚肉泥</div>
-        <div class="product-tagline">本站精選介紹：專為挑嘴貓、熟齡貓、需要特殊照護的貓咪設計</div>
-        <div class="product-features">
-          <div class="product-feature">
-            <div class="product-feature-icon">🎯</div>
-            <div class="product-feature-text"><strong>低磷低鈉配方</strong>適合腎臟需要特別照護的熟齡貓，減少腎臟代謝負擔</div>
-          </div>
-          <div class="product-feature">
-            <div class="product-feature-icon">🐟</div>
-            <div class="product-feature-text"><strong>天然沙丁魚原料</strong>單一蛋白質來源，成分透明無添加，適合過敏體質</div>
-          </div>
-          <div class="product-feature">
-            <div class="product-feature-icon">💧</div>
-            <div class="product-feature-text"><strong>高含水量設計</strong>幫助補充日常水分，支持泌尿道健康</div>
-          </div>
-          <div class="product-feature">
-            <div class="product-feature-icon">✨</div>
-            <div class="product-feature-text"><strong>高適口性</strong>挑嘴貓也愛吃，作為主食補充或誘食均適合</div>
-          </div>
-        </div>
-        <div class="product-btns">
-          <button class="btn-product-primary">前往購買</button>
-          <button class="btn-product-secondary" onclick="goPage('articles')">閱讀相關文章</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="product-section">
-      <div class="product-section-title">產品數據</div>
-      <div class="spec-grid">
-        <div class="spec-item"><div class="spec-val">低磷</div><div class="spec-label">磷含量低於一般市售肉泥</div></div>
-        <div class="spec-item"><div class="spec-val">低鈉</div><div class="spec-label">控制鈉含量，減少心腎負擔</div></div>
-        <div class="spec-item"><div class="spec-val">天然</div><div class="spec-label">無人工色素、防腐劑、香料</div></div>
-        <div class="spec-item"><div class="spec-val">高水分</div><div class="spec-label">幫助補充日常所需水分</div></div>
-        <div class="spec-item"><div class="spec-val">單蛋白</div><div class="spec-label">沙丁魚單一蛋白質來源</div></div>
-        <div class="spec-item"><div class="spec-val">高適口</div><div class="spec-label">挑嘴貓接受度高</div></div>
-      </div>
-    </div>
-
-    <div class="product-section">
-      <div class="product-section-title">適合哪些貓咪？</div>
-      <div class="suitable-grid">
-        <div class="suitable-item">
-          <div class="suitable-icon">🐱</div>
-          <div class="suitable-text"><strong>熟齡貓（7歲以上）</strong><span>代謝減緩，需要低磷低鈉的飲食支持</span></div>
-        </div>
-        <div class="suitable-item">
-          <div class="suitable-icon">🍽️</div>
-          <div class="suitable-text"><strong>挑嘴貓</strong><span>食慾差或對食物挑剔，需要高適口性補充</span></div>
-        </div>
-        <div class="suitable-item">
-          <div class="suitable-icon">💊</div>
-          <div class="suitable-text"><strong>需要補充水分的貓</strong><span>不愛喝水，透過濕食增加每日水分攝取</span></div>
-        </div>
-        <div class="suitable-item">
-          <div class="suitable-icon">🏥</div>
-          <div class="suitable-text"><strong>腎臟照護貓</strong><span>需要控制磷、鈉攝取的慢性腎病貓咪</span></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="product-section">
-      <div class="product-section-title">延伸閱讀</div>
-      <div class="article-grid" id="productRelated"></div>
-    </div>
-  </div>
-  <div id="productFooter"></div>
-</div>
-
-<!-- ════════════════════════════════════
      PAGE: ABOUT
 ════════════════════════════════════ -->
 <div class="page" id="page-about">
@@ -993,8 +879,7 @@ function goPage(id) {
   if (id === 'home') renderHome();
   if (id === 'articles') renderArticlesPage();
   if (id === 'faq') renderFaqPage();
-  if (id === 'product') renderProductRelated();
-  if (['home','articles','faq','product','about'].includes(id)) renderFooter(id);
+  if (['home','articles','faq','about'].includes(id)) renderFooter(id);
 }
 function filterAndGo(tag) { currentFilter = tag; goPage('articles'); }
 function updateNavActive(id) {
@@ -1225,11 +1110,6 @@ function renderFaqPage() {
 // ══════════════════════════════
 // PRODUCT RELATED
 // ══════════════════════════════
-function renderProductRelated() {
-  const el = document.getElementById('productRelated');
-  el.innerHTML = articles.filter(a => (a.tag === '副食與營養' || a.tag === '熟齡貓照護') && !a.draft).slice(0, 3).map(a => articleCardHTML(a)).join('');
-}
-
 // ══════════════════════════════
 // FOOTER
 // ══════════════════════════════
@@ -1262,7 +1142,7 @@ function renderFooter(page) {
       <div class="footer-notice">知識在前，照護在後</div>
     </div>
   </footer>`;
-  ['homeFooter','articlesFooter','articleFooter','faqFooter','productFooter','aboutFooter'].forEach(id => {
+  ['homeFooter','articlesFooter','articleFooter','faqFooter','aboutFooter'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = html;
   });
