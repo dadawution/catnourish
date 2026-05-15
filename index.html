@@ -48,6 +48,7 @@
       font-size: 16px;
       line-height: 1.8;
       -webkit-font-smoothing: antialiased;
+      padding-top: 64px; /* compensate for fixed nav (height 64px) */
     }
     .page { display: none; animation: fadeIn 0.3s ease; }
     .page.active { display: block; }
@@ -62,7 +63,7 @@
        NAV
     ══════════════════════════════ */
     #mainNav {
-      position: sticky; top: 0; z-index: 200;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
       background: rgba(250,248,244,0.95);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
