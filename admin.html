@@ -1135,7 +1135,7 @@ async function buildArticleHtml(article, allArticles){
     .replace(/\{\{TYPE\}\}/g, article.type||'')
     .replace(/\{\{DATE\}\}/g, article.date||'')
     .replace(/\{\{SLUG\}\}/g, slug)
-    .replace(/\{\{COVER\}\}/g, article.cover||'')
+    .replace(/\{\{COVER\}\}/g, article.cover||'https://catcare.tw/og-image.png')
     .replace('{{TAGS_HTML}}', tagsHtml)
     .replace('{{COVER_HTML}}', coverHtml)
     .replace('{{TOC_HTML}}', tocHtml)
