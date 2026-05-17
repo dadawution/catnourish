@@ -64,7 +64,7 @@
     body{background:var(--cream);color:var(--ink);font-family:'Noto Sans TC',sans-serif;font-size:15px;line-height:1.7;padding-top:60px}
 
     /* NAV */
-    .site-nav{background:var(--ink);padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;position:fixed;top:0;left:0;right:0;z-index:100}
+    .site-nav{background:var(--ink);padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;position:fixed;top:0;left:0;right:0;z-index:100;transform:translateZ(0)}
     .nav-logo{font-family:'Noto Serif TC',serif;font-weight:900;color:white;text-decoration:none;font-size:.95rem}
     .nav-logo span{color:#7ec8c8}
     .nav-links{display:flex;gap:24px;list-style:none}
@@ -408,7 +408,7 @@
       <a class="btn-cta" href="../index.html#articles">瀏覽更多文章 →</a>
     </div>
 
-    <div class="related-articles"><div class="related-title">延伸閱讀</div><div class="related-list"><a class="related-item" href="senior-ckd-cat-diet.html"><div class="related-thumb">🐈</div><div class="related-info"><div class="related-cat">飲食照護</div><div class="related-title-text">老貓與腎貓需要低磷、低鈉、低鈣飲食？主食與零食肉泥挑選要點</div></div></a><a class="related-item" href="bionature-cat-puree-cat-water.html"><div class="related-thumb">🐱</div><div class="related-info"><div class="related-cat">飲食照護</div><div class="related-title-text">BioNature 碧然思貓肉泥適合我家貓嗎？從日本製、天然食材到日常補水的完整判斷指南</div></div></a><a class="related-item" href="cat-medicine-tips.html"><div class="related-thumb">💊🐱✨</div><div class="related-info"><div class="related-cat">飲食照護</div><div class="related-title-text">貓咪吃藥一直吐怎麼辦？ 3 大餵藥技巧搭配肉泥，化解人貓焦慮</div></div></a></div></div>
+    <div class="related-articles"><div class="related-title">延伸閱讀</div><div class="related-list"><a class="related-item" href="senior-cat-what-senior-age-cat-treat-puree-nutrition.html"><div class="related-thumb">🐱</div><div class="related-info"><div class="related-cat">飲食照護</div><div class="related-title-text">老貓吃什麼比較好？熟齡貓主食、零食肉泥與營養標示挑選指南</div></div></a><a class="related-item" href="senior-ckd-cat-diet.html"><div class="related-thumb">🐈</div><div class="related-info"><div class="related-cat">飲食照護</div><div class="related-title-text">老貓與腎貓需要低磷、低鈉、低鈣飲食？主食與零食肉泥挑選要點</div></div></a><a class="related-item" href="bionature-cat-puree-cat-water.html"><div class="related-thumb">🐱</div><div class="related-info"><div class="related-cat">飲食照護</div><div class="related-title-text">BioNature 碧然思貓肉泥適合我家貓嗎？從日本製、天然食材到日常補水的完整判斷指南</div></div></a></div></div>
   </main>
 
   <aside class="article-sidebar">
@@ -469,7 +469,7 @@ function toggleNav(){
   btn.setAttribute('aria-expanded',isOpen);
   btn.setAttribute('aria-label',isOpen?'關閉選單':'開啟選單');
 }
-document.addEventListener('click',function(e){
+document.addEventListener('pointerdown',function(e){
   const nav=document.querySelector('.site-nav');
   if(nav&&!nav.contains(e.target)){
     const links=document.querySelector('.nav-links');
@@ -479,7 +479,7 @@ document.addEventListener('click',function(e){
       if(btn){btn.classList.remove('open');btn.setAttribute('aria-expanded','false');btn.setAttribute('aria-label','開啟選單');}
     }
   }
-});
+},{passive:true});
 </script>
 </body>
 </html>
