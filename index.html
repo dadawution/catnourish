@@ -1011,10 +1011,23 @@ function bodyWithAnchors(body) {
     return `<p>${renderLinks(bold)}</p>`;
   }).join('');
 }
+// Auto-inject Cloudinary transformations for smaller / faster images on mobile
+function optimizeCloudinaryUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  const m = url.match(/^(https?:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/)(.+)$/);
+  if (!m) return url;
+  const firstSegment = m[2].split('/')[0];
+  if (/^v\d+$/.test(firstSegment)) {
+    return m[1] + 'c_limit,w_1200,f_auto,q_auto/' + m[2];
+  }
+  return url;
+}
+
 function articleCardHTML(a) {
   const url = a.slug ? 'articles/'+a.slug+'.html' : '#';
-  const thumb = a.cover
-    ? `<img src="${a.cover}" style="width:100%;height:100%;object-fit:cover;" alt="${a.coverAlt || a.title}" loading="lazy">`
+  const optimizedCover = optimizeCloudinaryUrl(a.cover);
+  const thumb = optimizedCover
+    ? `<img src="${optimizedCover}" style="width:100%;height:100%;object-fit:cover;" alt="${a.coverAlt || a.title}" loading="lazy">`
     : a.emoji || '📝';
   return `<a class="article-card" href="${url}" style="text-decoration:none;color:inherit;display:block">
     <div class="article-card-thumb">${a.cover ? thumb : `<span style="font-size:2.5rem">${a.emoji||'📝'}</span>`}</div>
@@ -1105,7 +1118,7 @@ function openArticle(id) {
         <div class="article-meta-item">📌 ${a.type}</div>
       </div>
     </div>
-    ${a.cover ? `<div class="article-cover"><img src="${a.cover}" alt="${a.coverAlt||a.title}" loading="lazy">${a.coverAlt ? `<div class="article-cover-caption">${a.coverAlt}</div>` : ''}</div>` : ''}
+    ${a.cover ? `<div class="article-cover"><img src="${optimizeCloudinaryUrl(a.cover)}" alt="${a.coverAlt||a.title}" loading="lazy">${a.coverAlt ? `<div class="article-cover-caption">${a.coverAlt}</div>` : ''}</div>` : ''}
     <div class="article-summary"><strong>文章重點：</strong>${a.excerpt}</div>
     ${buildToc(a.body)}
     <div class="article-body">${bodyWithAnchors(a.body)}</div>

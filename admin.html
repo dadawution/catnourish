@@ -1055,6 +1055,20 @@ function generateSlug(title){
   return slug;
 }
 
+// Auto-inject Cloudinary transformations: c_limit,w_1200,f_auto,q_auto
+// (massively reduces image weight by serving WebP/AVIF + auto quality)
+function optimizeCloudinaryUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  const m = url.match(/^(https?:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/)(.+)$/);
+  if (!m) return url;  // not a Cloudinary URL
+  const firstSegment = m[2].split('/')[0];
+  // If first segment is "v123456..." then no transformations present yet
+  if (/^v\d+$/.test(firstSegment)) {
+    return m[1] + 'c_limit,w_1200,f_auto,q_auto/' + m[2];
+  }
+  return url;  // already has transformations, don't double-apply
+}
+
 function renderBodyHtml(body){
   let i=0;
   const imgRe=/^!\[([^\]]*)\]\(([^)]+)\)$/;
@@ -1080,7 +1094,7 @@ function renderBodyHtml(body){
     if(line.startsWith('- '))return`<li>${renderInline(line.slice(2))}</li>`;
     if(line.trim()==='---')return'<hr>';
     const m=line.match(imgRe);
-    if(m)return`<figure><img src="${m[2]}" alt="${m[1]}" loading="lazy">${m[1]?`<figcaption>${m[1]}</figcaption>`:''}</figure>`;
+    if(m)return`<figure><img src="${optimizeCloudinaryUrl(m[2])}" alt="${m[1]}" loading="lazy">${m[1]?`<figcaption>${m[1]}</figcaption>`:''}</figure>`;
     if(line.trim()==='')return'';
     return`<p>${renderInline(line)}</p>`;
   }).join('\n');
@@ -1101,9 +1115,12 @@ async function buildArticleHtml(article, allArticles){
   const bodyHtml = renderBodyHtml(article.body||'');
   const tocHtml = buildTocHtml(article.body||'');
 
+  // Optimize cover URL once for all uses (Cloudinary auto-format/quality)
+  const optimizedCover = article.cover ? optimizeCloudinaryUrl(article.cover) : '';
+
   // Cover
-  const coverHtml = article.cover
-    ? `<div class="article-cover"><img src="${article.cover}" alt="${article.coverAlt||article.title}" loading="lazy">${article.coverAlt?`<div class="article-cover-caption">${article.coverAlt}</div>`:''}</div>`
+  const coverHtml = optimizedCover
+    ? `<div class="article-cover"><img src="${optimizedCover}" alt="${article.coverAlt||article.title}" loading="lazy">${article.coverAlt?`<div class="article-cover-caption">${article.coverAlt}</div>`:''}</div>`
     : '';
 
   // FAQ HTML
@@ -1135,7 +1152,7 @@ async function buildArticleHtml(article, allArticles){
     .replace(/\{\{TYPE\}\}/g, article.type||'')
     .replace(/\{\{DATE\}\}/g, article.date||'')
     .replace(/\{\{SLUG\}\}/g, slug)
-    .replace(/\{\{COVER\}\}/g, article.cover||'https://catcare.tw/og-image.png')
+    .replace(/\{\{COVER\}\}/g, optimizedCover||'https://catcare.tw/og-image.png')
     .replace('{{TAGS_HTML}}', tagsHtml)
     .replace('{{COVER_HTML}}', coverHtml)
     .replace('{{TOC_HTML}}', tocHtml)
