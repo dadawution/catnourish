@@ -856,20 +856,13 @@ function renderPickerGrid(){
   grid.innerHTML=filtered.map(p=>{
     const safeName=(p.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
     return `
-    <div class="modal-photo" onclick="selectPhoto('${p.url}','${safeName}')">
-      <div class="modal-photo-thumb"><img src="${p.url}" alt="${p.name||''}" loading="lazy"></div>
+    <div class="modal-photo" onclick="selectPhoto('${p.url}','${safeName}')" style="height:240px;display:flex;flex-direction:column">
+      <div class="modal-photo-thumb" style="position:relative;width:100%;height:200px;background:#f2ece3;overflow:hidden;flex-shrink:0">
+        <img src="${p.url}" alt="${p.name||''}" loading="lazy" style="width:100%;height:200px;object-fit:cover;display:block">
+      </div>
       <div class="modal-photo-name">${p.name||''}</div>
     </div>`;
   }).join('');
-  // Belt-and-suspenders: force inline height in case CSS gets overridden somewhere
-  setTimeout(()=>{
-    grid.querySelectorAll('.modal-photo-thumb').forEach(el=>{
-      el.style.cssText='position:relative;width:100%;height:200px;background:var(--warm);overflow:hidden';
-    });
-    grid.querySelectorAll('.modal-photo-thumb img').forEach(img=>{
-      img.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
-    });
-  },0);
 }
 // Preview state — set when user clicks a thumbnail, cleared on cancel/confirm/close
 let pendingPreviewUrl=null;
