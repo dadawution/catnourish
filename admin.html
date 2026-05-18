@@ -144,8 +144,8 @@
     .modal-photo{border:2px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;background:white}
     .modal-photo:hover{border-color:var(--teal);transform:scale(1.03);box-shadow:0 6px 16px rgba(0,0,0,.1)}
     /* Bulletproof 1:1 aspect ratio via padding-bottom (works in every browser) */
-    .modal-photo-thumb{position:relative;width:100%;height:200px;background:var(--warm);overflow:hidden}
-    .modal-photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .modal-photo-thumb{position:relative;width:100%;height:200px!important;background:var(--warm);overflow:hidden}
+    .modal-photo-thumb img{width:100%;height:100%!important;object-fit:cover;display:block}
     .modal-photo-name{font-size:.78rem;color:var(--ink-2);padding:8px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;border-top:1px solid var(--border)}
     /* Preview pane shown after clicking a thumbnail */
     .modal-preview-view{flex:1;display:none;flex-direction:column;padding:24px;overflow-y:auto}
@@ -861,6 +861,15 @@ function renderPickerGrid(){
       <div class="modal-photo-name">${p.name||''}</div>
     </div>`;
   }).join('');
+  // Belt-and-suspenders: force inline height in case CSS gets overridden somewhere
+  setTimeout(()=>{
+    grid.querySelectorAll('.modal-photo-thumb').forEach(el=>{
+      el.style.cssText='position:relative;width:100%;height:200px;background:var(--warm);overflow:hidden';
+    });
+    grid.querySelectorAll('.modal-photo-thumb img').forEach(img=>{
+      img.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
+    });
+  },0);
 }
 // Preview state — set when user clicks a thumbnail, cleared on cancel/confirm/close
 let pendingPreviewUrl=null;
