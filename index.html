@@ -1037,7 +1037,7 @@ function articleCardHTML(a) {
       <div class="article-card-title">${a.title}</div>
       <div class="article-card-excerpt">${a.excerpt}</div>
     </div>
-    <div class="article-card-footer"><span>${a.date}</span><span>→</span></div>
+    <div class="article-card-footer">${a.hideDate?'':'<span>'+a.date+'</span>'}<span>→</span></div>
   </a>`;
 }
 
@@ -1114,7 +1114,7 @@ function openArticle(id) {
       <span class="article-card-cat ${catClass(a.tag)}" style="display:inline-block;margin-bottom:14px">${a.tag}</span>
       <h1 class="article-h1">${a.title}</h1>
       <div class="article-meta-row">
-        <div class="article-meta-item">📅 ${a.date}</div>
+        ${a.hideDate?'':'<div class="article-meta-item">📅 '+a.date+'</div>'}
         <div class="article-meta-item">🐾 Cat Care Journal</div>
         <div class="article-meta-item">📌 ${a.type}</div>
       </div>

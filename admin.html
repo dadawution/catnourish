@@ -358,6 +358,15 @@
         </div>
         <div class="form-group"><label>文章摘要（100字以內）</label><input type="text" id="aExcerpt" placeholder="一句話說明文章重點"></div>
         <div class="form-group">
+          <label>前台顯示日期</label>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <input type="date" id="aDate" style="width:180px">
+            <label style="display:flex;align-items:center;gap:6px;font-weight:normal;font-size:.875rem;cursor:pointer;color:var(--ink-2)">
+              <input type="checkbox" id="aHideDate" onchange="toggleHideDate()"> 不顯示日期
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
           <label>封面圖片</label>
           <div class="input-with-btn">
             <input type="text" id="aCover" placeholder="點右側按鈕從圖庫選，或貼上 Cloudinary 網址">
@@ -1201,6 +1210,9 @@ async function buildArticleHtml(article, allArticles){
     ? `<div class="related-articles"><div class="related-title">延伸閱讀</div><div class="related-list">${related.map(r=>`<a class="related-item" href="${r.slug}.html"><div class="related-thumb">${r.emoji||'📝'}</div><div class="related-info"><div class="related-cat">${r.tag}</div><div class="related-title-text">${r.title}</div></div></a>`).join('')}</div></div>`
     : '';
 
+  // Date display (respects hideDate flag)
+  const dateSpanHtml = article.hideDate ? '' : `<span>📅 ${article.date||''}</span>`;
+
   // Replace all placeholders
   tmpl = tmpl
     .replace(/\{\{TITLE\}\}/g, article.title||'')
@@ -1208,6 +1220,7 @@ async function buildArticleHtml(article, allArticles){
     .replace(/\{\{TAG\}\}/g, article.tag||'')
     .replace(/\{\{TYPE\}\}/g, article.type||'')
     .replace(/\{\{DATE\}\}/g, article.date||'')
+    .replace('{{DATE_SPAN_HTML}}', dateSpanHtml)
     .replace(/\{\{SLUG\}\}/g, slug)
     .replace(/\{\{COVER\}\}/g, optimizedCover||'https://catcare.tw/og-image.png')
     .replace('{{TAGS_HTML}}', tagsHtml)
@@ -1263,7 +1276,8 @@ async function publishArticle(){
     emoji:document.getElementById('aEmoji').value.trim()||'📝',
     body,faq:faqParsed,
     tags:document.getElementById('aTags').value.trim().split(',').map(t=>t.trim()).filter(Boolean),
-    date:isEditing?(existingArticle||{}).date||new Date().toISOString().slice(0,10):new Date().toISOString().slice(0,10),
+    date:document.getElementById('aDate').value||new Date().toISOString().slice(0,10),
+    hideDate:document.getElementById('aHideDate').checked||false,
     slug:(document.getElementById('aSlug').value.trim()||existingSlug||generateSlug(title)).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'')||generateSlug(title),
     draft:false
   };
@@ -1343,9 +1357,19 @@ function clearStatusAndRenderList(slug, articleId, wasEditing){
   const closeBtn = document.getElementById('closeEditBtn');
   if (closeBtn) closeBtn.style.display = '';
 }
+function toggleHideDate(){
+  const hide=document.getElementById('aHideDate').checked;
+  const dateInput=document.getElementById('aDate');
+  dateInput.disabled=hide;
+  dateInput.style.opacity=hide?'0.4':'1';
+}
+
 function clearForm(){
   ['aTopic','aTitle','aSlug','aExcerpt','aCover','aCoverAlt','aBody','aTags','aFaq'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('aEmoji').value='📝';
+  document.getElementById('aDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('aHideDate').checked=false;
+  toggleHideDate();
   editingId=null;
   document.getElementById('pubBtn').textContent='📤 發布到 GitHub';
   document.getElementById('formModeLabel').textContent='✨ AI 輔助文章生成';
@@ -1387,6 +1411,8 @@ function saveDraft() {
       tags: document.getElementById('aTags').value.trim().split(',').map(t => t.trim()).filter(Boolean),
       faq: faqParsed,
       slug: document.getElementById('aSlug').value.trim(),
+      date: document.getElementById('aDate').value || new Date().toISOString().slice(0,10),
+      hideDate: document.getElementById('aHideDate').checked || false,
       savedAt: new Date().toLocaleString('zh-TW'),
     };
     localStorage.setItem(DRAFT_KEY + '_' + editingId, JSON.stringify(draftData));
@@ -1417,7 +1443,8 @@ async function saveDraftToGitHub() {
     emoji: document.getElementById('aEmoji').value.trim() || '📝',
     body, faq: faqParsed,
     tags: document.getElementById('aTags').value.trim().split(',').map(t => t.trim()).filter(Boolean),
-    date: isEditing ? (existingArticle || {}).date || new Date().toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+    date: document.getElementById('aDate').value || (isEditing ? (existingArticle || {}).date || new Date().toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)),
+    hideDate: document.getElementById('aHideDate').checked || false,
     slug, draft: true
   };
   document.getElementById('draftBtn').disabled = true;
@@ -1474,6 +1501,8 @@ function resolveDraftConflict(choice) {
     if (pendingDraft.tags) document.getElementById('aTags').value = pendingDraft.tags.join(', ');
     if (pendingDraft.cover !== undefined) document.getElementById('aCover').value = pendingDraft.cover;
     if (pendingDraft.coverAlt !== undefined) document.getElementById('aCoverAlt').value = pendingDraft.coverAlt;
+    if (pendingDraft.date) document.getElementById('aDate').value = pendingDraft.date;
+    if (pendingDraft.hideDate !== undefined){ document.getElementById('aHideDate').checked=pendingDraft.hideDate; toggleHideDate(); }
     updatePreview();
     showToast('📝 已載入本機草稿');
   } else {
@@ -1498,6 +1527,9 @@ function editArticle(id){
   document.getElementById('aCover').value=a.cover||'';
   document.getElementById('aCoverAlt').value=a.coverAlt||'';
   document.getElementById('aEmoji').value=a.emoji||'📝';
+  document.getElementById('aDate').value=a.date||new Date().toISOString().slice(0,10);
+  document.getElementById('aHideDate').checked=!!a.hideDate;
+  toggleHideDate();
   document.getElementById('aBody').value=a.body||'';
   if(a.faq&&a.faq.length){
     document.getElementById('aFaq').value=a.faq.map(f=>f.q+'::'+f.a).join('\n');
