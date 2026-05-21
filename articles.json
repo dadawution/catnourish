@@ -273,7 +273,8 @@
       "吃藥",
       "注意事項"
     ],
-    "date": "2026-04-03",
+    "date": "2026-05-21",
+    "hideDate": false,
     "slug": "cat-puree-type",
     "draft": false
   }
