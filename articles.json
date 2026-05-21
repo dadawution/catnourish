@@ -256,9 +256,25 @@
         "a": "不是。一般零食型肉泥很適合互動、獎勵與安撫貓咪，只是定位上比較偏零食，建議控制頻率與份量。"
       }
     ],
-    "tags": [],
+    "tags": [
+      "貓咪",
+      "肉泥",
+      "種類",
+      "零食",
+      "挑選",
+      "選擇",
+      "依據",
+      "營養",
+      "餵藥",
+      "ciao",
+      "碧然思",
+      "成分",
+      "補水",
+      "吃藥",
+      "注意事項"
+    ],
     "date": "2026-04-03",
-    "slug": "functional-type-puree-and-regular-treat-type-puree-has-what-different-cat-mi-puree",
+    "slug": "cat-puree-type",
     "draft": false
   }
 ]
