@@ -175,6 +175,10 @@
     .btn-cancel{flex:1;padding:10px;background:var(--warm);color:var(--ink);border:none;border-radius:8px;font-size:.875rem;cursor:pointer;font-family:inherit}
     .btn-del-confirm{flex:1;padding:10px;background:var(--red);color:white;border:none;border-radius:8px;font-size:.875rem;cursor:pointer;font-family:inherit;opacity:.35;transition:opacity .2s}
     .btn-del-confirm.ready{opacity:1}
+    .btn-draft-load{width:100%;padding:12px;background:var(--warm);color:var(--ink);border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;cursor:pointer;font-family:inherit;text-align:left}
+    .btn-draft-load:hover{border-color:var(--amber);background:#fff8e8}
+    .btn-draft-remote{width:100%;padding:12px;background:var(--teal);color:white;border:none;border-radius:8px;font-size:.9rem;cursor:pointer;font-family:inherit;text-align:left}
+    .btn-draft-remote:hover{opacity:.85}
 
     /* TOAST */
     .toast{position:fixed;bottom:24px;right:24px;background:var(--sage);color:white;padding:12px 20px;border-radius:8px;font-size:.875rem;transform:translateY(80px);opacity:0;transition:all .3s;z-index:999}
@@ -575,6 +579,23 @@
     <div class="del-btn-row">
       <button class="btn-cancel" onclick="closeDelModal()">取消</button>
       <button class="btn-del-confirm" id="delConfirmBtn" onclick="executeDelete()" disabled>刪除</button>
+    </div>
+  </div>
+</div>
+
+<!-- DRAFT CONFLICT MODAL -->
+<div class="del-modal-overlay" id="draftConflictModal">
+  <div class="del-modal-box">
+    <div class="del-modal-icon">💾</div>
+    <h3 style="color:var(--amber)">發現未發布的本機草稿</h3>
+    <div class="del-modal-title" style="margin-bottom:20px">
+      文章：<strong id="draftConflictTitle"></strong><br>
+      草稿儲存於：<strong id="draftConflictDate"></strong><br>
+      <span style="font-size:.8rem;color:var(--muted)">這份草稿只存在你的瀏覽器，尚未上傳 GitHub。</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn-draft-load" onclick="resolveDraftConflict('draft')">📝 載入本機草稿 — 繼續上次的編輯</button>
+      <button class="btn-draft-remote" onclick="resolveDraftConflict('remote')">☁️ 用 GitHub 最新版 — 捨棄這份草稿</button>
     </div>
   </div>
 </div>
@@ -1366,6 +1387,7 @@ function saveDraft() {
       tags: document.getElementById('aTags').value.trim().split(',').map(t => t.trim()).filter(Boolean),
       faq: faqParsed,
       slug: document.getElementById('aSlug').value.trim(),
+      savedAt: new Date().toLocaleString('zh-TW'),
     };
     localStorage.setItem(DRAFT_KEY + '_' + editingId, JSON.stringify(draftData));
     showToast('💾 草稿已暫存（不影響已發布版本）');
@@ -1441,6 +1463,26 @@ async function publishDraft(id) {
 }
 
 // ── EDIT ARTICLE ──
+// ── DRAFT CONFLICT RESOLUTION ──
+let pendingDraft = null;
+
+function resolveDraftConflict(choice) {
+  document.getElementById('draftConflictModal').classList.remove('on');
+  if (choice === 'draft' && pendingDraft) {
+    if (pendingDraft.body !== undefined) document.getElementById('aBody').value = pendingDraft.body;
+    if (pendingDraft.excerpt !== undefined) document.getElementById('aExcerpt').value = pendingDraft.excerpt;
+    if (pendingDraft.tags) document.getElementById('aTags').value = pendingDraft.tags.join(', ');
+    if (pendingDraft.cover !== undefined) document.getElementById('aCover').value = pendingDraft.cover;
+    if (pendingDraft.coverAlt !== undefined) document.getElementById('aCoverAlt').value = pendingDraft.coverAlt;
+    updatePreview();
+    showToast('📝 已載入本機草稿');
+  } else {
+    localStorage.removeItem(DRAFT_KEY + '_' + editingId);
+    showToast('☁️ 已使用 GitHub 最新版，草稿已清除');
+  }
+  pendingDraft = null;
+}
+
 function editArticle(id){
   const a=articles.find(x=>x.id===id);
   if(!a)return;
@@ -1472,15 +1514,13 @@ function editArticle(id){
   // Switch to new tab and scroll to top
   switchTab('new');
   window.scrollTo({top:0,behavior:'smooth'});
-  // Check for local draft
+  // Check for local draft — show conflict modal instead of silently overriding
   const localDraft = localStorage.getItem(DRAFT_KEY + '_' + id);
   if (localDraft) {
-    const d = JSON.parse(localDraft);
-    document.getElementById('aBody').value = d.body || document.getElementById('aBody').value;
-    document.getElementById('aExcerpt').value = d.excerpt || document.getElementById('aExcerpt').value;
-    document.getElementById('aTags').value = d.tags ? d.tags.join(', ') : document.getElementById('aTags').value;
-    updatePreview();
-    showToast('💾 已載入本機草稿版本');
+    pendingDraft = JSON.parse(localDraft);
+    document.getElementById('draftConflictTitle').textContent = a.title;
+    document.getElementById('draftConflictDate').textContent = pendingDraft.savedAt || '未知時間';
+    document.getElementById('draftConflictModal').classList.add('on');
   } else {
     showToast('已載入文章，修改後點「更新文章」儲存');
   }
