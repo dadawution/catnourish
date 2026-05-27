@@ -85,6 +85,10 @@
       "可以吃嗎"
     ],
     "date": "2026-05-17",
+    "hideDate": false,
+    "authorName": "Darren",
+    "authorTitle": "Cat Care Journal 編輯部",
+    "authorAvatar": "",
     "slug": "senior-cat-food",
     "draft": false
   },
