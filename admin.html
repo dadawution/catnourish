@@ -510,6 +510,15 @@
         <button class="btn btn-primary" id="rebuildBtn" onclick="rebuildAllArticles()">🔄 重新產生所有文章 HTML</button>
       </div>
       <div class="form-card">
+        <h2>🧹 孤兒 HTML 清理</h2>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;line-height:1.7">掃描 articles/ 資料夾，找出不在文章清單內的舊版或廢棄 HTML 檔案，可以一次刪除。不會影響正式文章。</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <button class="btn btn-ghost" onclick="scanOrphans()">🔍 掃描孤兒檔案</button>
+          <button class="btn" id="deleteOrphansBtn" style="display:none;background:#c0392b;color:white" onclick="deleteOrphans()">🗑️ 刪除所有孤兒</button>
+        </div>
+        <div id="orphanResult" style="font-size:.85rem;line-height:1.8"></div>
+      </div>
+      <div class="form-card">
         <h2>💾 資料備份</h2>
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:20px;line-height:1.7">建議定期將文章資料備份到你的電腦，以防萬一。下載的 JSON 檔案可以在需要時重新上傳到 GitHub 還原。</p>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
@@ -1596,17 +1605,78 @@ function checkDelInput(){
   document.getElementById('delConfirmBtn').disabled=!ready;
   document.getElementById('delConfirmBtn').classList.toggle('ready',ready);
 }
+async function deleteGithubFile(path){
+  // 取得檔案 SHA 後用 DELETE 方法刪除
+  const res=await ghFetch(path);
+  if(!res.ok)return; // 檔案不存在就略過
+  const data=await res.json();
+  const sha=data.sha;
+  await ghFetch(path,{method:'DELETE',body:JSON.stringify({message:`刪除孤兒：${path}`,sha,branch:cfg.branch})});
+}
+
 async function executeDelete(){
   if(!deleteTargetId)return;
   const id=deleteTargetId;closeDelModal();
   setSaveStatus('delStatus','saving','⏳ 刪除中...');
   try{
+    // 找到要刪除的文章 slug，準備一起刪 HTML
+    const target=articles.find(a=>a.id===id);
+    const slug=target?.slug;
     const{sha}=await getFile(ARTICLES_PATH);
     articles=articles.filter(a=>a.id!==id);
-    await putFile(ARTICLES_PATH,articles,sha,'刪除文章');
+    await putFile(ARTICLES_PATH,articles,sha,'刪除文章：'+(target?.title||id));
+    // 同步刪除 GitHub 上的 HTML 檔
+    if(slug){
+      try{await deleteGithubFile(`articles/${slug}.html`);}
+      catch(e){console.warn('HTML 刪除失敗（可能不存在）',e);}
+    }
     renderArticleList();setSaveStatus('delStatus','ok','✅ 已刪除');showToast('已刪除');
     setTimeout(()=>hideSaveStatus('delStatus'),3000);
   }catch(e){setSaveStatus('delStatus','err','❌ 刪除失敗：'+e.message);}
+}
+
+// ── 孤兒清理 ──
+let orphanList=[];
+async function scanOrphans(){
+  const el=document.getElementById('orphanResult');
+  const btn=document.getElementById('deleteOrphansBtn');
+  el.innerHTML='⏳ 掃描中...';btn.style.display='none';orphanList=[];
+  try{
+    // 從 GitHub 取得 articles/ 目錄內容
+    const res=await ghFetch('articles/');
+    if(!res.ok)throw new Error('無法讀取 articles/ 目錄');
+    const files=await res.json();
+    const htmlFiles=files.filter(f=>f.name.endsWith('.html'));
+    // 正式 slug 清單
+    const validSlugs=new Set(articles.filter(a=>a.slug).map(a=>a.slug));
+    orphanList=htmlFiles.filter(f=>!validSlugs.has(f.name.replace('.html','')));
+    if(orphanList.length===0){
+      el.innerHTML='<span style="color:var(--sage)">✅ 沒有孤兒檔案，很乾淨！</span>';
+    }else{
+      el.innerHTML=`<div style="margin-bottom:12px;color:#c0392b">發現 <strong>${orphanList.length}</strong> 個孤兒檔案：</div>`
+        +orphanList.map(f=>`<div style="font-family:monospace;padding:4px 0;border-bottom:1px solid var(--border)">📄 ${f.name}</div>`).join('')
+        +`<div style="margin-top:12px;color:var(--muted);font-size:.8rem">這些檔案不在文章清單內，可以安全刪除。</div>`;
+      btn.style.display='inline-block';
+    }
+  }catch(e){el.innerHTML='❌ 掃描失敗：'+e.message;}
+}
+
+async function deleteOrphans(){
+  if(!orphanList.length)return;
+  const el=document.getElementById('orphanResult');
+  const btn=document.getElementById('deleteOrphansBtn');
+  btn.disabled=true;btn.textContent='⏳ 刪除中...';
+  let ok=0,fail=0;
+  for(const f of orphanList){
+    try{
+      await ghFetch(`articles/${f.name}`,{method:'DELETE',body:JSON.stringify({message:`清理孤兒：${f.name}`,sha:f.sha,branch:cfg.branch})});
+      ok++;
+    }catch(e){fail++;console.warn('刪除失敗',f.name,e);}
+  }
+  el.innerHTML=`<span style="color:var(--sage)">✅ 完成：成功刪除 ${ok} 個${fail?`，失敗 ${fail} 個`:''}。</span>`;
+  btn.style.display='none';btn.disabled=false;btn.textContent='🗑️ 刪除所有孤兒';
+  orphanList=[];
+  showToast(`已清理 ${ok} 個孤兒檔案`);
 }
 
 // ── FAQ ──
