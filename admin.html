@@ -1203,9 +1203,9 @@ async function buildArticleHtml(article, allArticles){
     ? `<div class="article-faq-section"><div class="article-faq-title">📋 常見問答</div>${article.faq.map((f,i)=>`<div class="faq-item" id="faq${i}"><div class="faq-q" onclick="toggleFaq('faq${i}')"><span>${f.q}</span><span class="faq-q-icon">▼</span></div><div class="faq-a"><div class="faq-a-inner">${f.a}</div></div></div>`).join('')}</div>`
     : '';
 
-  // FAQ Schema
+  // FAQ Schema（使用 JSON.stringify 避免特殊字元破壞 JSON 結構）
   const faqSchema = article.faq&&article.faq.length
-    ? `<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[${article.faq.map(f=>`{"@type":"Question","name":"${f.q}","acceptedAnswer":{"@type":"Answer","text":"${f.a}"}}`).join(',')}]}<\/script>`
+    ? `<script type="application/ld+json">${JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":article.faq.map(f=>({"@type":"Question","name":f.q,"acceptedAnswer":{"@type":"Answer","text":f.a}}))})}<\/script>`
     : '';
 
   // Tags HTML
