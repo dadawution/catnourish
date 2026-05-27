@@ -367,6 +367,33 @@
           </div>
         </div>
         <div class="form-group">
+          <label>撰稿人名稱（選填）</label>
+          <input type="text" id="aAuthorName" placeholder="例如：Darren">
+        </div>
+        <div class="form-group">
+          <label>所屬單位／頭銜（選填）</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <select id="aAuthorTitle" style="flex:1;min-width:200px">
+              <option value="">— 不顯示 —</option>
+            </select>
+            <button class="btn btn-ghost" style="white-space:nowrap" onclick="openAddAuthorTitle()">＋ 新增自訂</button>
+          </div>
+          <div id="addAuthorTitleArea" style="display:none;margin-top:10px;display:none">
+            <div style="display:flex;gap:8px">
+              <input type="text" id="newAuthorTitleInput" placeholder="例如：獸醫師｜台北動物醫院" style="flex:1">
+              <button class="btn btn-primary" onclick="saveCustomAuthorTitle()">儲存</button>
+              <button class="btn btn-ghost" onclick="closeAddAuthorTitle()">取消</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>撰稿人頭像（選填）</label>
+          <div class="input-with-btn">
+            <input type="text" id="aAuthorAvatar" placeholder="點右側按鈕從圖庫選，或貼上圖片網址">
+            <button class="btn-pick" onclick="openPicker('aAuthorAvatar')">📷 從圖庫選</button>
+          </div>
+        </div>
+        <div class="form-group">
           <label>封面圖片</label>
           <div class="input-with-btn">
             <input type="text" id="aCover" placeholder="點右側按鈕從圖庫選，或貼上 Cloudinary 網址">
@@ -717,8 +744,8 @@
 <script>
 const CLOUD = { name:'dajib0ylm', preset:'catnourish' };
 let cfg = { token:'', owner:'', repo:'', branch:'main' };
-let articles=[], faqs=[], photos=[], pickerTarget=null, deleteTargetId=null, editingId=null;
-const ARTICLES_PATH='articles.json', FAQS_PATH='faqs.json', PHOTOS_PATH='photos.json';
+let articles=[], faqs=[], photos=[], authorTitles=[], pickerTarget=null, deleteTargetId=null, editingId=null;
+const ARTICLES_PATH='articles.json', FAQS_PATH='faqs.json', PHOTOS_PATH='photos.json', AUTHOR_CONFIG_PATH='author-config.json';
 
 // ── GITHUB ──
 async function ghFetch(path,options={}){
@@ -770,6 +797,7 @@ async function connectGitHub(){
     const[aData,fData]=await Promise.all([getFile(ARTICLES_PATH),getFile(FAQS_PATH)]);
     articles=aData.content;faqs=fData.content;
     try{const pData=await getFile(PHOTOS_PATH);photos=pData.content;}catch(e){photos=[];}
+    try{const acData=await getFile(AUTHOR_CONFIG_PATH);authorTitles=acData.content.titles||[];}catch(e){authorTitles=[];}
     localStorage.setItem('bio_cfg',JSON.stringify({owner,repo,branch}));
     localStorage.setItem('bio_token',token);
     enterAdmin();
@@ -789,6 +817,7 @@ async function tryAutoConnect(){
     const[aData,fData]=await Promise.all([getFile(ARTICLES_PATH),getFile(FAQS_PATH)]);
     articles=aData.content;faqs=fData.content;
     try{const pData=await getFile(PHOTOS_PATH);photos=pData.content;}catch(e){photos=[];}
+    try{const acData=await getFile(AUTHOR_CONFIG_PATH);authorTitles=acData.content.titles||[];}catch(e){authorTitles=[];}
     enterAdmin();
   }catch(e){}
 }
@@ -796,7 +825,7 @@ function enterAdmin(){
   document.getElementById('setupScreen').style.display='none';
   document.getElementById('adminApp').style.display='block';
   document.getElementById('repoLabel').textContent=`${cfg.owner}/${cfg.repo}`;
-  renderArticleList();renderFaqList();renderPhotoGrid();loadSettings();
+  renderArticleList();renderFaqList();renderPhotoGrid();loadSettings();renderAuthorTitleSelect();
 }
 function disconnect(){localStorage.removeItem('bio_token');location.reload();}
 
@@ -1222,6 +1251,31 @@ async function buildArticleHtml(article, allArticles){
   // Date display (respects hideDate flag)
   const dateSpanHtml = article.hideDate ? '' : `<span>📅 ${article.date||''}</span>`;
 
+  // Author display
+  const authorName = article.authorName||'';
+  const authorTitle = article.authorTitle||'';
+  const authorAvatar = article.authorAvatar||'';
+
+  // Header meta span
+  const authorMetaHtml = authorName
+    ? `<span>✍️ ${[authorTitle,authorName].filter(Boolean).join('／')}</span>`
+    : '';
+
+  // Bottom author card
+  const authorCardHtml = authorName ? `
+  <div class="author-card">
+    ${authorAvatar ? `<img class="author-avatar" src="${authorAvatar}" alt="${authorName}">` : ''}
+    <div class="author-info">
+      <div class="author-label">關於作者</div>
+      <div class="author-name">${[authorTitle,authorName].filter(Boolean).join('／')}</div>
+    </div>
+  </div>` : '';
+
+  // Author Schema
+  const authorSchema = authorName
+    ? JSON.stringify({"@type":"Person","name":authorName,"affiliation":{"@type":"Organization","name":"貓咪照護飲食誌 Cat Care Journal"}})
+    : JSON.stringify({"@type":"Organization","name":"貓咪照護飲食誌 Cat Care Journal","url":"https://catcare.tw/"});
+
   // Replace all placeholders
   tmpl = tmpl
     .replace(/\{\{TITLE\}\}/g, article.title||'')
@@ -1230,6 +1284,9 @@ async function buildArticleHtml(article, allArticles){
     .replace(/\{\{TYPE\}\}/g, article.type||'')
     .replace(/\{\{DATE\}\}/g, article.date||'')
     .replace('{{DATE_SPAN_HTML}}', dateSpanHtml)
+    .replace('{{AUTHOR_META_HTML}}', authorMetaHtml)
+    .replace('{{AUTHOR_CARD_HTML}}', authorCardHtml)
+    .replace('{{AUTHOR_SCHEMA}}', authorSchema)
     .replace(/\{\{SLUG\}\}/g, slug)
     .replace(/\{\{COVER\}\}/g, optimizedCover||'https://catcare.tw/og-image.png')
     .replace('{{TAGS_HTML}}', tagsHtml)
@@ -1287,6 +1344,9 @@ async function publishArticle(){
     tags:document.getElementById('aTags').value.trim().split(',').map(t=>t.trim()).filter(Boolean),
     date:document.getElementById('aDate').value||new Date().toISOString().slice(0,10),
     hideDate:document.getElementById('aHideDate').checked||false,
+    authorName:document.getElementById('aAuthorName').value.trim()||'',
+    authorTitle:document.getElementById('aAuthorTitle').value||'',
+    authorAvatar:document.getElementById('aAuthorAvatar').value.trim()||'',
     slug:(document.getElementById('aSlug').value.trim()||existingSlug||generateSlug(title)).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'')||generateSlug(title),
     draft:false
   };
@@ -1374,11 +1434,12 @@ function toggleHideDate(){
 }
 
 function clearForm(){
-  ['aTopic','aTitle','aSlug','aExcerpt','aCover','aCoverAlt','aBody','aTags','aFaq'].forEach(id=>document.getElementById(id).value='');
+  ['aTopic','aTitle','aSlug','aExcerpt','aCover','aCoverAlt','aBody','aTags','aFaq','aAuthorName','aAuthorAvatar'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('aEmoji').value='📝';
   document.getElementById('aDate').value=new Date().toISOString().slice(0,10);
   document.getElementById('aHideDate').checked=false;
   toggleHideDate();
+  renderAuthorTitleSelect('');
   editingId=null;
   document.getElementById('pubBtn').textContent='📤 發布到 GitHub';
   document.getElementById('formModeLabel').textContent='✨ AI 輔助文章生成';
@@ -1422,6 +1483,9 @@ function saveDraft() {
       slug: document.getElementById('aSlug').value.trim(),
       date: document.getElementById('aDate').value || new Date().toISOString().slice(0,10),
       hideDate: document.getElementById('aHideDate').checked || false,
+      authorName: document.getElementById('aAuthorName').value.trim()||'',
+      authorTitle: document.getElementById('aAuthorTitle').value||'',
+      authorAvatar: document.getElementById('aAuthorAvatar').value.trim()||'',
       savedAt: new Date().toLocaleString('zh-TW'),
     };
     localStorage.setItem(DRAFT_KEY + '_' + editingId, JSON.stringify(draftData));
@@ -1454,6 +1518,9 @@ async function saveDraftToGitHub() {
     tags: document.getElementById('aTags').value.trim().split(',').map(t => t.trim()).filter(Boolean),
     date: document.getElementById('aDate').value || (isEditing ? (existingArticle || {}).date || new Date().toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)),
     hideDate: document.getElementById('aHideDate').checked || false,
+    authorName: document.getElementById('aAuthorName').value.trim()||'',
+    authorTitle: document.getElementById('aAuthorTitle').value||'',
+    authorAvatar: document.getElementById('aAuthorAvatar').value.trim()||'',
     slug, draft: true
   };
   document.getElementById('draftBtn').disabled = true;
@@ -1512,6 +1579,9 @@ function resolveDraftConflict(choice) {
     if (pendingDraft.coverAlt !== undefined) document.getElementById('aCoverAlt').value = pendingDraft.coverAlt;
     if (pendingDraft.date) document.getElementById('aDate').value = pendingDraft.date;
     if (pendingDraft.hideDate !== undefined){ document.getElementById('aHideDate').checked=pendingDraft.hideDate; toggleHideDate(); }
+    if (pendingDraft.authorName !== undefined) document.getElementById('aAuthorName').value = pendingDraft.authorName||'';
+    if (pendingDraft.authorTitle !== undefined) renderAuthorTitleSelect(pendingDraft.authorTitle||'');
+    if (pendingDraft.authorAvatar !== undefined) document.getElementById('aAuthorAvatar').value = pendingDraft.authorAvatar||'';
     updatePreview();
     showToast('📝 已載入本機草稿');
   } else {
@@ -1539,6 +1609,9 @@ function editArticle(id){
   document.getElementById('aDate').value=a.date||new Date().toISOString().slice(0,10);
   document.getElementById('aHideDate').checked=!!a.hideDate;
   toggleHideDate();
+  document.getElementById('aAuthorName').value=a.authorName||'';
+  renderAuthorTitleSelect(a.authorTitle||'');
+  document.getElementById('aAuthorAvatar').value=a.authorAvatar||'';
   document.getElementById('aBody').value=a.body||'';
   if(a.faq&&a.faq.length){
     document.getElementById('aFaq').value=a.faq.map(f=>f.q+'::'+f.a).join('\n');
@@ -1633,6 +1706,57 @@ async function executeDelete(){
     renderArticleList();setSaveStatus('delStatus','ok','✅ 已刪除');showToast('已刪除');
     setTimeout(()=>hideSaveStatus('delStatus'),3000);
   }catch(e){setSaveStatus('delStatus','err','❌ 刪除失敗：'+e.message);}
+}
+
+// ── 撰稿人單位選單 ──
+const DEFAULT_AUTHOR_TITLES = ['Cat Care Journal 編輯部','獸醫師監修','動物營養師'];
+
+function renderAuthorTitleSelect(selectedValue=''){
+  const sel = document.getElementById('aAuthorTitle');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— 不顯示 —</option>';
+  const allTitles = [...DEFAULT_AUTHOR_TITLES, ...authorTitles];
+  allTitles.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    if(t === selectedValue) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // 自訂項目加刪除按鈕（用 data list 顯示）
+  if(authorTitles.length){
+    const grp = document.createElement('optgroup');
+    grp.label = '── 自訂（可刪除）──';
+    // already added above, just show delete UI separately
+  }
+}
+
+function openAddAuthorTitle(){
+  const area = document.getElementById('addAuthorTitleArea');
+  area.style.display = 'block';
+  document.getElementById('newAuthorTitleInput').focus();
+}
+function closeAddAuthorTitle(){
+  document.getElementById('addAuthorTitleArea').style.display = 'none';
+  document.getElementById('newAuthorTitleInput').value = '';
+}
+async function saveCustomAuthorTitle(){
+  const val = document.getElementById('newAuthorTitleInput').value.trim();
+  if(!val) return;
+  if([...DEFAULT_AUTHOR_TITLES,...authorTitles].includes(val)){
+    showToast('此選項已存在');return;
+  }
+  authorTitles.push(val);
+  try{
+    let sha=null;
+    try{sha=await getFileSha(AUTHOR_CONFIG_PATH);}catch(e){}
+    const body={message:'新增撰稿人單位：'+val, content:btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify({titles:authorTitles},null,2)))), branch:cfg.branch};
+    if(sha)body.sha=sha;
+    await ghFetch(AUTHOR_CONFIG_PATH,{method:'PUT',body:JSON.stringify(body)});
+    renderAuthorTitleSelect(val);
+    document.getElementById('aAuthorTitle').value=val;
+    closeAddAuthorTitle();
+    showToast('已新增：'+val);
+  }catch(e){showToast('儲存失敗：'+e.message);}
 }
 
 // ── 孤兒清理 ──

@@ -34,11 +34,7 @@
     "description": "{{EXCERPT}}",
     "datePublished": "{{DATE}}T00:00:00+08:00",
     "dateModified": "{{DATE}}T00:00:00+08:00",
-    "author": {
-      "@type": "Organization",
-      "name": "貓咪照護飲食誌 Cat Care Journal",
-      "url": "https://catcare.tw/"
-    },
+    "author": {{AUTHOR_SCHEMA}},
     "publisher": {
       "@type": "Organization",
       "name": "貓咪照護飲食誌 Cat Care Journal",
@@ -182,6 +178,11 @@
     .article-body mark{padding:1px 3px;border-radius:3px;background:#fff59d}
 
     /* FAQ SECTION */
+    /* AUTHOR CARD */
+    .author-card{display:flex;align-items:center;gap:16px;margin:32px 0;padding:20px 24px;background:var(--warm);border-radius:12px;border:1px solid var(--border)}
+    .author-avatar{width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border)}
+    .author-label{font-size:.72rem;color:var(--muted);margin-bottom:3px;letter-spacing:.05em}
+    .author-name{font-size:.9rem;font-weight:500;color:var(--ink-2)}
     .article-faq-section{margin-top:48px;padding-top:36px;border-top:2px solid var(--border)}
     .article-faq-title{font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:700;margin-bottom:20px;color:var(--ink)}
     .faq-item{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;background:white}
@@ -291,7 +292,7 @@
       <h1 class="article-h1">{{TITLE}}</h1>
       <div class="article-meta">
         {{DATE_SPAN_HTML}}
-        <span>🐾 Cat Care Journal</span>
+        {{AUTHOR_META_HTML}}
         <span>📌 {{TYPE}}</span>
       </div>
     </div>
@@ -305,6 +306,7 @@
     <div class="article-body">{{BODY_HTML}}</div>
 
     {{TAGS_HTML}}
+    {{AUTHOR_CARD_HTML}}
     {{FAQ_HTML}}
 
     <div class="article-cta">
