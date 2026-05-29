@@ -1012,9 +1012,16 @@ function formatBody(text) {
   }).join('');
 }
 function buildToc(body) {
-  const lines = body.split('\n').filter(l => l.startsWith('## '));
-  if (lines.length < 2) return '';
-  return `<div class="article-toc"><h4>文章目錄</h4><ol>${lines.map((l,i) => `<li><a href="#sec${i}">${l.slice(3)}</a></li>`).join('')}</ol></div>`;
+  const allH2 = body.split('\n').filter(l => l.startsWith('## '));
+  if (allH2.length < 2) return '';
+  const starred = allH2.map((l,i) => ({l,i})).filter(({l}) => l.startsWith('## ★'));
+  let items;
+  if (starred.length > 0) {
+    items = starred.slice(0,5).map(({l,i}) => `<li><a href="#sec${i}">${l.slice(4).trim()}</a></li>`);
+  } else {
+    items = allH2.slice(0,5).map((l,i) => `<li><a href="#sec${i}">${l.slice(3)}</a></li>`);
+  }
+  return `<div class="article-toc"><h4>文章目錄</h4><ol>${items.join('')}</ol></div>`;
 }
 function bodyWithAnchors(body) {
   let i = 0;
@@ -1027,7 +1034,7 @@ function bodyWithAnchors(body) {
     });
   }
   return body.split('\n').map(line => {
-    if (line.startsWith('## ')) return `<h2 id="sec${i++}">${renderLinks(line.slice(3))}</h2>`;
+    if (line.startsWith('## ')) return `<h2 id="sec${i++}">${renderLinks(line.slice(3).replace(/^★\s*/,''))}</h2>`;
     if (line.startsWith('### ')) return `<h3>${renderLinks(line.slice(4))}</h3>`;
     if (line.startsWith('- ')) return `<li>${renderLinks(line.slice(2))}</li>`;
     if (line.trim() === '---') return '<hr>';

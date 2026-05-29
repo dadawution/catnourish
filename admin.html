@@ -503,26 +503,29 @@
     <div class="tab-panel" id="tab-settings">
       <div class="form-card">
         <h2>⚙️ AI 寫作風格設定</h2>
-        <p style="font-size:.85rem;color:var(--muted);margin-bottom:20px;line-height:1.7">設定你希望文章呈現的風格與要求。儲存後，點下方「複製完整提示詞」，貼到 Claude / ChatGPT / Gemini，AI 就會按照這個風格生成文章。</p>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:20px;line-height:1.7">填入文章資訊，點「複製完整提示詞」，貼到 Claude / ChatGPT / Gemini 即可生成文章。</p>
         <div class="form-group">
-          <label>語氣風格</label>
-          <input type="text" id="settingsTone" placeholder="例如：輕鬆親切，像朋友聊天，不要太學術">
+          <label>文章主題／標題 <span style="color:#c47c2e">必填</span></label>
+          <input type="text" id="settingsTopic" placeholder="例如：貓咪換季掉毛怎麼辦？">
         </div>
         <div class="form-group">
-          <label>目標讀者</label>
-          <input type="text" id="settingsAudience" placeholder="例如：第一次養老貓的飼主，對貓咪飲食知識不多">
+          <label>置入產品 <span style="color:var(--muted);font-size:.8em">選填</span></label>
+          <input type="text" id="settingsProduct" placeholder="例如：BioNature 碧然思貓肉泥">
         </div>
         <div class="form-group">
-          <label>固定結尾提醒</label>
-          <input type="text" id="settingsEnding" placeholder="例如：文章結尾請提醒讀者有任何疑問請諮詢獸醫師">
+          <label>置入強度 <span style="color:var(--muted);font-size:.8em">選填</span></label>
+          <select id="settingsIntensity" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:white;font-size:.9rem;color:var(--ink)">
+            <option value="">— 不置入 —</option>
+            <option value="1 純知識">1 純知識</option>
+            <option value="2 自然帶入">2 自然帶入</option>
+            <option value="3 適度介紹">3 適度介紹</option>
+            <option value="4 重點推薦">4 重點推薦</option>
+            <option value="5 品牌深度">5 品牌深度</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>禁止事項</label>
-          <input type="text" id="settingsAvoid" placeholder="例如：不要提到任何特定品牌名稱，不要使用過於專業的醫學術語">
-        </div>
-        <div class="form-group">
-          <label>其他補充說明</label>
-          <textarea id="settingsExtra" style="min-height:80px" placeholder="任何其他你希望 AI 注意的事項..."></textarea>
+          <label>特殊補充 <span style="color:var(--muted);font-size:.8em">選填</span></label>
+          <input type="text" id="settingsExtra" placeholder="例如：請特別強調補水的重要性">
         </div>
         <div class="save-status" id="settingsSaved"></div>
         <div class="btn-row">
@@ -1016,50 +1019,126 @@ function exportBackup(type){
 
 // ── SETTINGS ──
 function loadSettings(){
-  document.getElementById('settingsTone').value=localStorage.getItem('bio_tone')||'';
-  document.getElementById('settingsAudience').value=localStorage.getItem('bio_audience')||'';
-  document.getElementById('settingsEnding').value=localStorage.getItem('bio_ending')||'';
-  document.getElementById('settingsAvoid').value=localStorage.getItem('bio_avoid')||'';
+  document.getElementById('settingsTopic').value=localStorage.getItem('bio_topic')||'';
+  document.getElementById('settingsProduct').value=localStorage.getItem('bio_product')||'';
+  document.getElementById('settingsIntensity').value=localStorage.getItem('bio_intensity')||'';
   document.getElementById('settingsExtra').value=localStorage.getItem('bio_extra')||'';
   const lastBackup=localStorage.getItem('bio_last_backup');
   const el=document.getElementById('lastBackupTime');
   if(el&&lastBackup)el.textContent=lastBackup;
 }
 function saveSettings(){
-  localStorage.setItem('bio_tone',document.getElementById('settingsTone').value.trim());
-  localStorage.setItem('bio_audience',document.getElementById('settingsAudience').value.trim());
-  localStorage.setItem('bio_ending',document.getElementById('settingsEnding').value.trim());
-  localStorage.setItem('bio_avoid',document.getElementById('settingsAvoid').value.trim());
+  localStorage.setItem('bio_topic',document.getElementById('settingsTopic').value.trim());
+  localStorage.setItem('bio_product',document.getElementById('settingsProduct').value.trim());
+  localStorage.setItem('bio_intensity',document.getElementById('settingsIntensity').value);
   localStorage.setItem('bio_extra',document.getElementById('settingsExtra').value.trim());
   setSaveStatus('settingsSaved','ok','✅ 設定已儲存');
   showToast('✅ 設定已儲存');
   setTimeout(()=>hideSaveStatus('settingsSaved'),3000);
 }
 function buildPromptText(){
-  const tone=localStorage.getItem('bio_tone')||'';
-  const audience=localStorage.getItem('bio_audience')||'';
-  const ending=localStorage.getItem('bio_ending')||'';
-  const avoid=localStorage.getItem('bio_avoid')||'';
-  const extra=localStorage.getItem('bio_extra')||'';
-  const tag=document.getElementById('aTag')?document.getElementById('aTag').value:'飲食照護';
-  const type=document.getElementById('aType')?document.getElementById('aType').value:'知識型';
-  const topic=document.getElementById('aTopic')?document.getElementById('aTopic').value:'[請填入主題]';
-  var lines=['你是貓咪照護飲食誌（Cat Care Journal）的內容編輯，獨立第三方貓咪飲食照護知識站，不隸屬任何品牌。',''];
-  if(tone)lines.push('語氣風格：'+tone);
-  if(audience)lines.push('目標讀者：'+audience);
-  if(ending)lines.push('結尾要求：'+ending);
-  if(avoid)lines.push('請避免：'+avoid);
-  if(extra)lines.push('補充說明：'+extra);
-  lines.push('','請撰寫繁體中文文章：','- 分類：'+tag,'- 類型：'+type,'- 主題：'+topic,'');
-  lines.push('請只回傳以下 JSON 格式，不要有任何其他說明文字：');
-  lines.push('{');
-  lines.push('  "title": "H1標題",');
-  lines.push('  "excerpt": "100字內摘要",');
-  lines.push('  "body": "正文600-800字，用 ## 表示大標，### 表示小標，- 表示清單",');
-  lines.push('  "faq": [{"q": "問題", "a": "回答"}, {"q": "問題", "a": "回答"}],');
-  lines.push('  "emoji": "相關emoji"');
-  lines.push('}');
-  return lines.join('\n');
+  const topic=document.getElementById('settingsTopic').value.trim();
+  const product=document.getElementById('settingsProduct').value.trim();
+  const intensity=document.getElementById('settingsIntensity').value;
+  const extra=document.getElementById('settingsExtra').value.trim();
+  const sys=`你是貓咪照護飲食誌（Cat Care Journal）的內容編輯。
+這是一個獨立第三方貓咪飲食照護知識站，不隸屬任何品牌或廠商。
+
+## 身份與立場
+- 站在「有經驗的朋友」位置給建議，不是高高在上的專家
+- 對讀者有同理心，但不失專業感
+- 稱呼混用：平常用「你」直接對話，強調客觀事實時用「飼主」
+- 用「你的貓咪」拉近距離，但不夾雜個人故事
+- 立場中立，不誇大、不恐嚇
+
+## 寫作風格
+**句型習慣：**
+- 最標誌性句型：「不是 X，而是 Y」，每篇至少出現數次
+- 條件遞進式：「若只是...可以先...；但若同時有...就不建議...」
+- 三層結構：「可以少量...但應先看...仍建議諮詢獸醫」
+- 句子長度：短句為主（12-20字），重點處用更短句製造停頓
+- 全用句號，不用驚嘆號
+
+**用詞習慣：**
+- 判斷動詞：看、留意、確認、評估、觀察
+- 建議動詞：可以、建議、不建議（不用「禁止」「必須」）
+- 轉折詞：但、仍、反而、不過
+- 刻意避免：術語、絕對化（不說「一定」「完全不能」）、誇大焦慮
+
+**數字使用：**
+- 時間點精確：「24-48小時」「第1-2天」
+- 份量給起點參考值再說明個體差異，不完全模糊
+- 品牌舉例低調：說「可作為參考之一」，不說「推薦」
+
+## 段落結構
+**文章開頭：** 選擇最適合這篇主題的方式，可以是：
+- 推翻常見誤解（「答案不是單純的可以或不可以」）
+- 從飼主真實疑問切入（「很多飼主第一個問的就是...」）
+- 先給結論再展開（直接說明這篇會解決什麼問題）
+不裝熟、不鋪情境，選擇最自然的方式進入主題。
+
+- H2 標題：問句，或「重點不是 X，而是 Y」型陳述句
+- H3 標題：極短概括句，一眼掌握重點
+- 每個 H3 下方：核心論點（1-2句）→ 展開說明（1-2段）→ 可選列表
+- 文章結尾：用一句話給讀者帶走核心觀念，不限定句型
+
+**內容邏輯框架（每篇都遵循）：**
+問「可以嗎？」→「要看什麼」→「怎麼做」→「什麼情況找獸醫」
+
+## 內容結構要求（GEO/SEO）
+- 正文字數：至少 1500 字，根據主題深度自行調整，不設上限
+- 第一段：說明本文會討論什麼，讓讀者知道會看到什麼
+- 每個段落要有 H2 或 H3 小標題
+- H2 盡量控制在 5 個以內
+- 若需要超過 5 個 H2，在核心段落的 H2 標題前加 ★，目錄只取有 ★ 的（最多 5 個）
+- 文章中至少 2 句定義句，格式：「X 是指...」
+- 數字要具體：不寫「較低」，要寫「低於 0.3%」這類明確數字
+- 結尾：簡短回顧全文重點，不超過 100 字
+- FAQ：至少 4 條，問題要用飼主真實會搜尋的句型
+
+## 鐵律（每篇都要遵守）
+- 每提到副食或零食，必說「不能取代主食」
+- 每涉及疾病照護，必說「建議先諮詢獸醫」
+- 不過度簡化：「不是越低越好」「不能只看一個指標」
+
+## 法規限制
+**所有文章都適用：**
+- 禁止使用：治療、預防疾病、療效、醫療效果、臨床證實
+- 涉及健康或症狀的內容，視情況判斷是否提醒讀者諮詢獸醫師
+- 不得暗示內容可取代專業獸醫診斷
+
+**有置入產品時額外適用：**
+- 禁止說：「專為 XX 設計」「經臨床驗證」「保證有效」
+- 產品成分或數據的說法，必須來自產品官方標示
+- 維持第三方評測角度，不使用廠商促銷語氣
+
+**置入強度對應處理方式：**
+- 1 純知識：完全不提產品
+- 2 自然帶入：文末或某段自然提及一次，不超過全文 5%
+- 3 適度介紹：內文 1-2 處帶入，有產品描述，不超過 20%
+- 4 重點推薦：產品是核心之一，第三方評測角度，不超過 30%
+- 5 品牌深度：整篇以產品為主軸，第三方評測角度
+
+## 輸出格式
+請只回傳以下 JSON 格式，不要有任何其他說明文字：
+{
+  "title": "H1標題",
+  "excerpt": "100字內摘要",
+  "body": "正文至少1500字，用 ## 表示大標，### 表示小標，- 表示清單，![圖片說明](圖片網址) 表示圖片，核心H2標題前加★",
+  "faq": [
+    {"q": "問題", "a": "回答"},
+    {"q": "問題", "a": "回答"},
+    {"q": "問題", "a": "回答"},
+    {"q": "問題", "a": "回答"}
+  ],
+  "emoji": "相關emoji",
+  "product_note": "說明產品置入的位置與方式，或說明為何不適合置入，純知識文填無"
+}`;
+  return sys+'\n\n'
+    +'文章主題：'+(topic||'[請填入主題]')+'\n'
+    +'置入產品：'+(product||'無')+'\n'
+    +'置入強度：'+(intensity||'無')+'\n'
+    +'特殊補充：'+(extra||'無');
 }
 function copyPrompt(){
   saveSettings();
@@ -1193,7 +1272,7 @@ function renderBodyHtml(body){
   return body.split('\n').map(line=>{
     const mp=line.match(/^__ASIDE_NOTE_(\d+)__$/);
     if(mp)return asides[parseInt(mp[1])];
-    if(line.startsWith('## '))return`<h2 id="sec${i++}">${renderInline(line.slice(3))}</h2>`;
+    if(line.startsWith('## ')){const t=line.slice(3).replace(/^★\s*/,'');return`<h2 id="sec${i++}">${renderInline(t)}</h2>`;}
     if(line.startsWith('### '))return`<h3>${renderInline(line.slice(4))}</h3>`;
     if(line.startsWith('- '))return`<li>${renderInline(line.slice(2))}</li>`;
     if(line.trim()==='---')return'<hr>';
@@ -1205,9 +1284,16 @@ function renderBodyHtml(body){
 }
 
 function buildTocHtml(body){
-  const lines=body.split('\n').filter(l=>l.startsWith('## '));
-  if(lines.length<2)return'';
-  return`<div class="article-toc"><h4>文章目錄</h4><ol>${lines.map((l,i)=>`<li><a href="#sec${i}">${l.slice(3)}</a></li>`).join('')}</ol></div>`;
+  const allH2=body.split('\n').filter(l=>l.startsWith('## '));
+  if(allH2.length<2)return'';
+  const starred=allH2.map((l,i)=>({l,i})).filter(({l})=>l.startsWith('## ★'));
+  let items;
+  if(starred.length>0){
+    items=starred.slice(0,5).map(({l,i})=>`<li><a href="#sec${i}">${l.slice(4).trim()}</a></li>`);
+  }else{
+    items=allH2.slice(0,5).map((l,i)=>`<li><a href="#sec${i}">${l.slice(3)}</a></li>`);
+  }
+  return`<div class="article-toc"><h4>文章目錄</h4><ol>${items.join('')}</ol></div>`;
 }
 
 async function buildArticleHtml(article, allArticles){
