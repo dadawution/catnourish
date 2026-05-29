@@ -535,10 +535,6 @@
           <p style="font-size:.8rem;color:var(--muted);margin-bottom:8px;line-height:1.6">這篇文章的核心知識點、重要數字或切入觀點，AI 會以這些為基礎撰寫。可用「✨ 幫我發想」按鈕自動生成。</p>
           <textarea id="settingsBackground" style="min-height:96px" placeholder="例如：成貓每日水分需求約每公斤 40 至 60 毫升；乾糧含水量僅 6-10%..."></textarea>
         </div>
-        <div class="form-group">
-          <label>Anthropic API Key <span style="color:var(--muted);font-size:.8em">✨ 發想功能必填</span></label>
-          <input type="password" id="settingsAnthropicKey" placeholder="sk-ant-api03-...">
-        </div>
         <div class="save-status" id="settingsSaved"></div>
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="copyPrompt()">📋 複製完整提示詞</button>
@@ -1036,7 +1032,6 @@ function loadSettings(){
   document.getElementById('settingsIntensity').value=localStorage.getItem('bio_intensity')||'';
   document.getElementById('settingsExtra').value=localStorage.getItem('bio_extra')||'';
   document.getElementById('settingsBackground').value=localStorage.getItem('bio_background')||'';
-  document.getElementById('settingsAnthropicKey').value=localStorage.getItem('bio_anthropic_key')||'';
   const lastBackup=localStorage.getItem('bio_last_backup');
   const el=document.getElementById('lastBackupTime');
   if(el&&lastBackup)el.textContent=lastBackup;
@@ -1047,7 +1042,6 @@ function saveSettings(){
   localStorage.setItem('bio_intensity',document.getElementById('settingsIntensity').value);
   localStorage.setItem('bio_extra',document.getElementById('settingsExtra').value.trim());
   localStorage.setItem('bio_background',document.getElementById('settingsBackground').value.trim());
-  localStorage.setItem('bio_anthropic_key',document.getElementById('settingsAnthropicKey').value.trim());
   setSaveStatus('settingsSaved','ok','✅ 設定已儲存');
   showToast('✅ 設定已儲存');
   setTimeout(()=>hideSaveStatus('settingsSaved'),3000);
@@ -2609,48 +2603,41 @@ function insertLink() {
 tryAutoConnect();
 
 // ── IDEATION MODAL ──
-async function openIdeationModal(){
+function openIdeationModal(){
   const topic=document.getElementById('settingsTopic').value.trim();
   if(!topic){showToast('請先填入文章主題');return;}
-  const apiKey=document.getElementById('settingsAnthropicKey').value.trim()||localStorage.getItem('bio_anthropic_key')||'';
-  if(!apiKey){showToast('請先在設定中填入 Anthropic API Key');return;}
-  document.getElementById('ideationModal').classList.add('on');
-  document.getElementById('ideationLoading').style.display='block';
-  document.getElementById('ideationContent').style.display='none';
-  document.getElementById('ideationError').style.display='none';
   const product=document.getElementById('settingsProduct').value.trim();
-  const userMsg='主題：'+topic+'\n置入產品：'+(product||'無')+'\n\n請回傳以下 JSON 格式：\n{\n  "angles": [\n    {\n      "title": "具體切入角度標題",\n      "reader": "適合哪種讀者",\n      "product_relevance": "高",\n      "reason": "為什麼這個角度好"\n    }\n  ],\n  "background_knowledge": "這個主題的核心知識點與重要數字，2至4條，格式簡短，可直接貼進主題背景知識欄位"\n}';
+  const prompt='你是貓咪照護飲食誌的內容策略顧問。根據以下主題，提供具體的文章切入角度與背景知識建議。\n\n主題：'+topic+'\n置入產品：'+(product||'無')+'\n\n請只回傳以下 JSON 格式，不要有任何其他說明文字：\n{\n  "angles": [\n    {\n      "title": "具體切入角度標題",\n      "reader": "適合哪種讀者",\n      "product_relevance": "與置入產品的關聯性（高／中／低）",\n      "reason": "為什麼這個角度好"\n    }\n  ],\n  "background_knowledge": "這個主題的核心知識點與重要數字，2至4條，格式簡短，可直接貼進主題背景知識欄位"\n}';
+  navigator.clipboard.writeText(prompt).catch(()=>{});
+  document.getElementById('ideationJsonInput').value='';
+  document.getElementById('ideationResults').style.display='none';
+  document.getElementById('ideationParseErr').style.display='none';
+  document.getElementById('ideationModal').classList.add('on');
+  showToast('✅ 提示詞已複製到剪貼板');
+}
+function applyIdeationJson(){
+  const raw=document.getElementById('ideationJsonInput').value.trim();
+  const errEl=document.getElementById('ideationParseErr');
+  if(!raw){errEl.style.display='block';errEl.textContent='請先貼入 JSON 內容';return;}
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:2000,
-        system:'你是貓咪照護飲食誌（Cat Care Journal）的內容策略顧問。根據飼主輸入的主題，提供具體的文章切入角度與背景知識建議。請提供 5 個不同角度。請只回傳 JSON，不要有任何其他說明文字。',
-        messages:[{role:'user',content:userMsg}]
-      })
-    });
-    if(!resp.ok){const e=await resp.text();throw new Error('API 錯誤：'+resp.status+' '+e);}
-    const data=await resp.json();
-    const raw=data.content[0].text;
     const jsonMatch=raw.match(/\{[\s\S]*\}/);
-    if(!jsonMatch)throw new Error('無法解析回傳格式');
+    if(!jsonMatch)throw new Error('找不到 JSON 格式');
     const parsed=JSON.parse(jsonMatch[0]);
+    if(!parsed.angles&&!parsed.background_knowledge)throw new Error('找不到有效欄位');
+    errEl.style.display='none';
     renderIdeation(parsed);
   }catch(e){
-    document.getElementById('ideationLoading').style.display='none';
-    document.getElementById('ideationError').style.display='block';
-    document.getElementById('ideationError').textContent='發生錯誤：'+e.message;
+    errEl.style.display='block';
+    errEl.textContent='解析失敗：'+e.message+'，請確認 JSON 格式正確';
   }
 }
 function renderIdeation(data){
-  const relColor={'高':'#c47c2e','中':'#2d6e6e','低':'var(--muted)'};
+  const relColor={'高':'#2d6e6e','中':'#c47c2e','低':'var(--muted)'};
   const anglesHtml=(data.angles||[]).map((a,i)=>`
     <div style="border:1px solid var(--border);border-radius:10px;padding:16px;background:white">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
         <strong style="font-size:.95rem;line-height:1.4">${i+1}. ${a.title}</strong>
-        <button class="btn btn-primary" onclick="selectAngle(${JSON.stringify(a.title)})" style="font-size:.8rem;padding:6px 14px;flex-shrink:0">選擇</button>
+        <button class="btn btn-primary" onclick="selectAngle(${JSON.stringify(a.title)})" style="font-size:.8rem;padding:6px 14px;flex-shrink:0">選擇這個角度</button>
       </div>
       <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">適合讀者：${a.reader}</div>
       <div style="margin-bottom:8px"><span style="font-size:.78rem;padding:2px 8px;border-radius:20px;background:var(--warm);color:${relColor[a.product_relevance]||'var(--muted)'};font-weight:600">產品關聯：${a.product_relevance||'—'}</span></div>
@@ -2659,8 +2646,7 @@ function renderIdeation(data){
   `).join('');
   document.getElementById('ideationAngles').innerHTML=anglesHtml;
   document.getElementById('ideationBg').textContent=data.background_knowledge||'（無）';
-  document.getElementById('ideationLoading').style.display='none';
-  document.getElementById('ideationContent').style.display='block';
+  document.getElementById('ideationResults').style.display='block';
 }
 function closeIdeationModal(){document.getElementById('ideationModal').classList.remove('on');}
 function selectAngle(title){
@@ -2668,39 +2654,42 @@ function selectAngle(title){
   closeIdeationModal();
   showToast('✅ 已填入文章主題');
 }
-function copyBgKnowledge(){
+function fillBgKnowledge(){
   const bg=document.getElementById('ideationBg').textContent;
   document.getElementById('settingsBackground').value=bg;
   localStorage.setItem('bio_background',bg);
-  showToast('✅ 已複製到主題背景知識欄位');
-  closeIdeationModal();
+  showToast('✅ 已填入主題背景知識欄位');
 }
 </script>
 
 <!-- Ideation Modal -->
 <div class="modal-overlay" id="ideationModal" style="z-index:600" onclick="if(event.target===this)closeIdeationModal()">
-  <div class="modal-box" style="max-width:760px">
+  <div class="modal-box" style="max-width:720px">
     <div class="modal-head">
       <h3>✨ 文章切入角度發想</h3>
       <button class="modal-close" onclick="closeIdeationModal()">✕</button>
     </div>
-    <div id="ideationBody" style="flex:1;overflow-y:auto;padding:20px 24px">
-      <div id="ideationLoading" style="text-align:center;padding:40px 0">
-        <div class="spin" style="margin:0 auto 12px"></div>
-        <p style="color:var(--muted);font-size:.9rem">AI 發想中，請稍候...</p>
+    <div style="flex:1;overflow-y:auto;padding:20px 24px">
+      <p style="font-size:.88rem;color:var(--ink-2);line-height:1.7;margin-bottom:14px;background:var(--teal-light);border-radius:8px;padding:12px 14px">
+        提示詞已複製到剪貼板，請貼到 <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" style="color:var(--teal)">Claude.ai</a> 取得建議後，把回傳的 JSON 貼到下方。
+      </p>
+      <textarea id="ideationJsonInput" style="width:100%;min-height:120px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;font-family:monospace;resize:vertical;box-sizing:border-box;outline:none" placeholder='貼入 Claude 回傳的 JSON，例如：{"angles":[...],"background_knowledge":"..."}' onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      <div id="ideationParseErr" style="display:none;color:#c0392b;font-size:.82rem;margin-top:8px"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn btn-primary" onclick="applyIdeationJson()">✅ 套用結果</button>
+        <button class="btn btn-ghost" onclick="closeIdeationModal()">取消</button>
       </div>
-      <div id="ideationContent" style="display:none">
-        <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">選擇一個切入角度，點「選擇」後會填入文章主題欄位。</p>
+      <div id="ideationResults" style="display:none;margin-top:24px;border-top:1px solid var(--border);padding-top:20px">
+        <p style="font-size:.85rem;font-weight:600;margin-bottom:12px;color:var(--ink)">切入角度</p>
         <div id="ideationAngles" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px"></div>
-        <div style="border-top:1px solid var(--border);padding-top:20px">
+        <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
             <strong style="font-size:.9rem">📚 主題背景知識建議</strong>
-            <button class="btn btn-ghost" onclick="copyBgKnowledge()" style="font-size:.8rem;padding:6px 12px">複製到主題背景知識欄位</button>
+            <button class="btn btn-ghost" onclick="fillBgKnowledge()" style="font-size:.8rem;padding:6px 12px">填入主題背景知識欄位</button>
           </div>
           <div id="ideationBg" style="background:var(--warm);border-radius:8px;padding:14px;font-size:.85rem;line-height:1.8;white-space:pre-wrap;color:var(--ink-2)"></div>
         </div>
       </div>
-      <div id="ideationError" style="display:none;text-align:center;padding:32px 0;color:#c0392b;font-size:.9rem"></div>
     </div>
   </div>
 </div>
