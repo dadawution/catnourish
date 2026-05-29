@@ -506,7 +506,10 @@
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:20px;line-height:1.7">填入文章資訊，點「複製完整提示詞」，貼到 Claude / ChatGPT / Gemini 即可生成文章。</p>
         <div class="form-group">
           <label>文章主題／標題 <span style="color:#c47c2e">必填</span></label>
-          <input type="text" id="settingsTopic" placeholder="例如：貓咪換季掉毛怎麼辦？">
+          <div style="display:flex;gap:8px">
+            <input type="text" id="settingsTopic" placeholder="例如：貓咪換季掉毛怎麼辦？" style="flex:1">
+            <button class="btn btn-ghost" onclick="openIdeationModal()" style="white-space:nowrap;flex-shrink:0;padding:10px 14px">✨ 幫我發想</button>
+          </div>
         </div>
         <div class="form-group">
           <label>置入產品 <span style="color:var(--muted);font-size:.8em">選填</span></label>
@@ -526,6 +529,15 @@
         <div class="form-group">
           <label>特殊補充 <span style="color:var(--muted);font-size:.8em">選填</span></label>
           <input type="text" id="settingsExtra" placeholder="例如：請特別強調補水的重要性">
+        </div>
+        <div class="form-group">
+          <label>主題背景知識 <span style="color:var(--muted);font-size:.8em">選填</span></label>
+          <p style="font-size:.8rem;color:var(--muted);margin-bottom:8px;line-height:1.6">這篇文章的核心知識點、重要數字或切入觀點，AI 會以這些為基礎撰寫。可用「✨ 幫我發想」按鈕自動生成。</p>
+          <textarea id="settingsBackground" style="min-height:96px" placeholder="例如：成貓每日水分需求約每公斤 40 至 60 毫升；乾糧含水量僅 6-10%..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Anthropic API Key <span style="color:var(--muted);font-size:.8em">✨ 發想功能必填</span></label>
+          <input type="password" id="settingsAnthropicKey" placeholder="sk-ant-api03-...">
         </div>
         <div class="save-status" id="settingsSaved"></div>
         <div class="btn-row">
@@ -1023,6 +1035,8 @@ function loadSettings(){
   document.getElementById('settingsProduct').value=localStorage.getItem('bio_product')||'';
   document.getElementById('settingsIntensity').value=localStorage.getItem('bio_intensity')||'';
   document.getElementById('settingsExtra').value=localStorage.getItem('bio_extra')||'';
+  document.getElementById('settingsBackground').value=localStorage.getItem('bio_background')||'';
+  document.getElementById('settingsAnthropicKey').value=localStorage.getItem('bio_anthropic_key')||'';
   const lastBackup=localStorage.getItem('bio_last_backup');
   const el=document.getElementById('lastBackupTime');
   if(el&&lastBackup)el.textContent=lastBackup;
@@ -1032,6 +1046,8 @@ function saveSettings(){
   localStorage.setItem('bio_product',document.getElementById('settingsProduct').value.trim());
   localStorage.setItem('bio_intensity',document.getElementById('settingsIntensity').value);
   localStorage.setItem('bio_extra',document.getElementById('settingsExtra').value.trim());
+  localStorage.setItem('bio_background',document.getElementById('settingsBackground').value.trim());
+  localStorage.setItem('bio_anthropic_key',document.getElementById('settingsAnthropicKey').value.trim());
   setSaveStatus('settingsSaved','ok','✅ 設定已儲存');
   showToast('✅ 設定已儲存');
   setTimeout(()=>hideSaveStatus('settingsSaved'),3000);
@@ -1052,7 +1068,7 @@ function buildPromptText(){
 - 全用句號，不用驚嘆號
 
 ## 文章開頭：路線圖式開場
-開頭第一段必須說明這篇文章的完整結構，格式為：
+開頭第一段必須說明這篇文章的完整結構：
 「這篇文章會先整理 [A]，包括 [細節]；接著分享 [B]，例如 [細節]；最後也會說明 [C]。」
 第一段是全文概要，不加任何標題。
 若文章有需要特別注意的重要警示，在第一段後立即加入：
@@ -1060,13 +1076,20 @@ function buildPromptText(){
 
 ## 寫作風格
 
+**句型習慣：**
+句子長度以短句為主，重點處刻意用更短的句子製造停頓。
+建議語氣要自然，不誇大、不絕對化。
+避免每篇出現相同的標誌性句型，讓文章有自己的節奏。
+
+**段落銜接：**
+每個 H2 段落的開頭，要有一至兩句銜接句，說明為什麼從上一個主題進入這個主題，讓讀者跟得上文章的邏輯走向，不會感覺突然跳進新話題。
+
 **項目符號：**
-- 統一使用 ・（不用 -）
-- 列點前加 ・，例如：・乾糧受潮
+統一使用 ・（不用 -），例如：・乾糧受潮
 
 **數字使用：**
 - 時間點精確：「24 至 48 小時」「第 1 至 2 天」
-- 換食步驟要有明確時間表（第1至2天、第3至4天...）
+- 換食或調整步驟要有明確時間表
 - 份量給起點參考值再說明個體差異
 - 品牌舉例低調：「可以作為...選擇之一」，不說「推薦」
 
@@ -1074,46 +1097,86 @@ function buildPromptText(){
 - 判斷動詞：看、留意、確認、評估、觀察
 - 建議動詞：可以、建議、不建議（不用「禁止」「必須」）
 - 轉折詞：但、仍、反而、不過
-- 刻意避免：術語、絕對化（不說「一定」「完全不能」）、誇大焦慮
+- 刻意避免：術語、絕對化、誇大焦慮
 
 ## 段落結構
-**H2 標題：** 清楚說明這個段落的核心，讓讀者一眼知道這段要討論什麼。不限句型，根據段落內容自然選擇，避免每篇都用同一種句型造成模板感。
+**H2 標題：**
+清楚說明這個段落的核心，讓讀者一眼知道這段要討論什麼。
+不限句型，根據段落內容自然選擇，避免每篇都用同一種句型。
 
-**H3 標題：** 極短概括句，一眼掌握重點，可加編號（1. 2. 3.）
+**H3 標題：**
+極短概括句，一眼掌握重點，可加編號（1. 2. 3.）
 
 **H3 內部結構：**
 核心論點（1-2句）→ 展開說明（1-2段）→ 條件列表或步驟
 若該 H3 有多個子面向，用 **(1)** **(2)** 細分，不要再開新 H3
 
 **文章結尾：**
-回到文章最核心的數字或判斷標準，再次提醒就醫門檻或關鍵行動，簡短有力，不超過 100 字。
+回到文章最核心的數字或判斷標準，簡短有力，不超過 100 字。
 
 ## 內容邏輯框架（每篇都遵循）
 排查原因（從外到內：環境 → 食物 → 疾病）
 → 飼主可以先嘗試的方法
 → 什麼情況不適合在家處理、要就醫
 
+## 引用來源規範
+文章中第一次引用某個機構時，用括號完整說明該機構是誰：
+「根據 WSAVA（世界小動物獸醫協會，制定全球小動物獸醫標準的國際組織）的照護指引...」
+後續再提到同一機構，直接用縮寫即可。
+文章結尾加上「參考來源：」清單，列出本文引用的機構名稱。
+
+## 已確認可直接引用的知識範圍
+以下數字來自可信學術來源，可以直接使用：
+
+【補水】
+- 成貓每日總水分需求（含食物水分）：每公斤體重約 40 至 60 毫升（來源：WSAVA、IRIS）
+- 乾糧含水量：約 6% 至 10%
+- 濕食含水量：約 70% 至 80%
+- 5 公斤成貓每日總水分需求約 200 至 300 毫升
+
+【腎貓與磷】
+- 腎臟照護飲食磷限制：低於每 1000 大卡 1 克（來源：WSAVA 2018）
+- IRIS 2023 目標：Stage 1-2 血磷低於 4.5 mg/dL
+- 一般商業乾糧磷含量：約每 1000 大卡 1.5 至 2.0 克
+- 處方腎臟飲食磷含量：約每 1000 大卡 0.4 至 1.0 克
+
+【老貓定義】
+- 7 歲以上：熟齡貓（Senior）
+- 11 歲以上：老年貓（Geriatric）（來源：WSAVA 生命階段指引）
+
+【不吃飯警戒線】
+- 超過 24 至 48 小時不進食：有脂肪肝風險，建議就醫
+
+以上範圍以外的數字或說法，必須放入 fact_check 欄位標記。
+
+## 可信來源清單
+撰寫時優先參考以下來源：
+- WSAVA（世界小動物獸醫協會）
+- IRIS（國際腎臟病研究學會）
+- ISFM（國際貓科醫學會）
+- AAFCO（美國飼料管理官員協會）
+- Cornell Feline Health Center（康乃爾大學貓咪健康中心）
+
 ## 產品置入邏輯（有置入產品時）
 必須按以下順序：
 1. 先給通用的挑選標準（不帶品牌）
 2. 說明符合這些標準的產品類型或特色
 3. 最後以「例如...，可以作為...選擇之一」帶出具體品牌
-4. 立即補充使用限制：「建議少量使用，不能取代主食」
-禁止直接說「推薦OO品牌」，必須是「舉例」的語氣。
+4. 立即補充使用限制
+禁止直接說「推薦 OO 品牌」，必須是「舉例」的語氣。
 
 ## 內容結構要求（GEO/SEO）
 - 正文字數：至少 1500 字，根據主題深度自行調整，不設上限
 - H2 盡量控制在 5 個以內
 - 若需要超過 5 個 H2，在核心段落的 H2 標題前加 ★，目錄只取有 ★ 的（最多 5 個）
-- 文章中至少 2 句定義句，格式：「X 是指...」
-- 數字要具體，不寫「較低」，要寫「低於 0.3%」這類明確數字
+- 文章中至少 2 句定義句，格式：「X 是指...」，融入段落中自然出現
+- 數字要具體，不寫「較低」，要寫明確數字
+- FAQ：2 至 4 條，重質不重量，問題要用飼主真實會搜尋的句型
 
-**FAQ：** 2 至 4 條，重質不重量，問題要用飼主真實會搜尋的句型
-
-## 鐵律（每篇都要遵守）
+## 鐵律（每篇都要遵守，每條最多出現 2 次）
 - 每提到副食或零食，必說「不能取代主食」
 - 每涉及疾病照護，必說「建議先諮詢獸醫」
-- 不過度簡化：「不是越低越好」「不能只看一個指標」
+重複超過 2 次會讓文章像在複製規則，要自然融入而非每段都寫。
 
 ## 法規限制
 **所有文章都適用：**
@@ -1138,19 +1201,25 @@ function buildPromptText(){
 {
   "title": "H1標題",
   "excerpt": "100字內摘要",
-  "body": "正文至少1500字，用 ## 表示大標，### 表示小標，・表示清單項目，![圖片說明](圖片網址) 表示圖片，核心H2標題前加★，H3內子面向用**(1)** **(2)**細分",
+  "body": "正文至少1500字，用 ## 表示大標，### 表示小標，・表示清單項目，![圖片說明](圖片網址) 表示圖片，核心H2標題前加★，H3內子面向用**(1)** **(2)**細分，文末加參考來源清單",
   "faq": [
     {"q": "問題", "a": "回答"},
     {"q": "問題", "a": "回答"}
   ],
   "emoji": "相關emoji",
-  "product_note": "說明產品置入的位置與方式，或說明為何不適合置入，純知識文填無"
+  "product_note": "說明產品置入的位置與方式，或說明為何不適合置入，純知識文填無",
+  "fact_check": [
+    "需要飼主核實的數字或說法1",
+    "需要飼主核實的數字或說法2"
+  ]
 }`;
+  const background=document.getElementById('settingsBackground').value.trim();
   return sys+'\n\n'
     +'文章主題：'+(topic||'[請填入主題]')+'\n'
     +'置入產品：'+(product||'無')+'\n'
     +'置入強度：'+(intensity||'無')+'\n'
-    +'特殊補充：'+(extra||'無');
+    +'特殊補充：'+(extra||'無')+'\n'
+    +'主題背景知識：'+(background||'無');
 }
 function copyPrompt(){
   saveSettings();
@@ -2538,6 +2607,102 @@ function insertLink() {
 }
 
 tryAutoConnect();
+
+// ── IDEATION MODAL ──
+async function openIdeationModal(){
+  const topic=document.getElementById('settingsTopic').value.trim();
+  if(!topic){showToast('請先填入文章主題');return;}
+  const apiKey=document.getElementById('settingsAnthropicKey').value.trim()||localStorage.getItem('bio_anthropic_key')||'';
+  if(!apiKey){showToast('請先在設定中填入 Anthropic API Key');return;}
+  document.getElementById('ideationModal').classList.add('on');
+  document.getElementById('ideationLoading').style.display='block';
+  document.getElementById('ideationContent').style.display='none';
+  document.getElementById('ideationError').style.display='none';
+  const product=document.getElementById('settingsProduct').value.trim();
+  const userMsg='主題：'+topic+'\n置入產品：'+(product||'無')+'\n\n請回傳以下 JSON 格式：\n{\n  "angles": [\n    {\n      "title": "具體切入角度標題",\n      "reader": "適合哪種讀者",\n      "product_relevance": "高",\n      "reason": "為什麼這個角度好"\n    }\n  ],\n  "background_knowledge": "這個主題的核心知識點與重要數字，2至4條，格式簡短，可直接貼進主題背景知識欄位"\n}';
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        system:'你是貓咪照護飲食誌（Cat Care Journal）的內容策略顧問。根據飼主輸入的主題，提供具體的文章切入角度與背景知識建議。請提供 5 個不同角度。請只回傳 JSON，不要有任何其他說明文字。',
+        messages:[{role:'user',content:userMsg}]
+      })
+    });
+    if(!resp.ok){const e=await resp.text();throw new Error('API 錯誤：'+resp.status+' '+e);}
+    const data=await resp.json();
+    const raw=data.content[0].text;
+    const jsonMatch=raw.match(/\{[\s\S]*\}/);
+    if(!jsonMatch)throw new Error('無法解析回傳格式');
+    const parsed=JSON.parse(jsonMatch[0]);
+    renderIdeation(parsed);
+  }catch(e){
+    document.getElementById('ideationLoading').style.display='none';
+    document.getElementById('ideationError').style.display='block';
+    document.getElementById('ideationError').textContent='發生錯誤：'+e.message;
+  }
+}
+function renderIdeation(data){
+  const relColor={'高':'#c47c2e','中':'#2d6e6e','低':'var(--muted)'};
+  const anglesHtml=(data.angles||[]).map((a,i)=>`
+    <div style="border:1px solid var(--border);border-radius:10px;padding:16px;background:white">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
+        <strong style="font-size:.95rem;line-height:1.4">${i+1}. ${a.title}</strong>
+        <button class="btn btn-primary" onclick="selectAngle(${JSON.stringify(a.title)})" style="font-size:.8rem;padding:6px 14px;flex-shrink:0">選擇</button>
+      </div>
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">適合讀者：${a.reader}</div>
+      <div style="margin-bottom:8px"><span style="font-size:.78rem;padding:2px 8px;border-radius:20px;background:var(--warm);color:${relColor[a.product_relevance]||'var(--muted)'};font-weight:600">產品關聯：${a.product_relevance||'—'}</span></div>
+      <div style="font-size:.83rem;color:var(--ink-2);line-height:1.6">${a.reason}</div>
+    </div>
+  `).join('');
+  document.getElementById('ideationAngles').innerHTML=anglesHtml;
+  document.getElementById('ideationBg').textContent=data.background_knowledge||'（無）';
+  document.getElementById('ideationLoading').style.display='none';
+  document.getElementById('ideationContent').style.display='block';
+}
+function closeIdeationModal(){document.getElementById('ideationModal').classList.remove('on');}
+function selectAngle(title){
+  document.getElementById('settingsTopic').value=title;
+  closeIdeationModal();
+  showToast('✅ 已填入文章主題');
+}
+function copyBgKnowledge(){
+  const bg=document.getElementById('ideationBg').textContent;
+  document.getElementById('settingsBackground').value=bg;
+  localStorage.setItem('bio_background',bg);
+  showToast('✅ 已複製到主題背景知識欄位');
+  closeIdeationModal();
+}
 </script>
+
+<!-- Ideation Modal -->
+<div class="modal-overlay" id="ideationModal" style="z-index:600" onclick="if(event.target===this)closeIdeationModal()">
+  <div class="modal-box" style="max-width:760px">
+    <div class="modal-head">
+      <h3>✨ 文章切入角度發想</h3>
+      <button class="modal-close" onclick="closeIdeationModal()">✕</button>
+    </div>
+    <div id="ideationBody" style="flex:1;overflow-y:auto;padding:20px 24px">
+      <div id="ideationLoading" style="text-align:center;padding:40px 0">
+        <div class="spin" style="margin:0 auto 12px"></div>
+        <p style="color:var(--muted);font-size:.9rem">AI 發想中，請稍候...</p>
+      </div>
+      <div id="ideationContent" style="display:none">
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">選擇一個切入角度，點「選擇」後會填入文章主題欄位。</p>
+        <div id="ideationAngles" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px"></div>
+        <div style="border-top:1px solid var(--border);padding-top:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <strong style="font-size:.9rem">📚 主題背景知識建議</strong>
+            <button class="btn btn-ghost" onclick="copyBgKnowledge()" style="font-size:.8rem;padding:6px 12px">複製到主題背景知識欄位</button>
+          </div>
+          <div id="ideationBg" style="background:var(--warm);border-radius:8px;padding:14px;font-size:.85rem;line-height:1.8;white-space:pre-wrap;color:var(--ink-2)"></div>
+        </div>
+      </div>
+      <div id="ideationError" style="display:none;text-align:center;padding:32px 0;color:#c0392b;font-size:.9rem"></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
