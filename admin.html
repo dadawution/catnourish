@@ -2631,13 +2631,15 @@ function applyIdeationJson(){
     errEl.textContent='解析失敗：'+e.message+'，請確認 JSON 格式正確';
   }
 }
+let _ideationAngles=[];
 function renderIdeation(data){
+  _ideationAngles=data.angles||[];
   const relColor={'高':'#2d6e6e','中':'#c47c2e','低':'var(--muted)'};
-  const anglesHtml=(data.angles||[]).map((a,i)=>`
+  const anglesHtml=_ideationAngles.map((a,i)=>`
     <div style="border:1px solid var(--border);border-radius:10px;padding:16px;background:white">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
         <strong style="font-size:.95rem;line-height:1.4">${i+1}. ${a.title}</strong>
-        <button class="btn btn-primary" onclick="selectAngle(${JSON.stringify(a.title)})" style="font-size:.8rem;padding:6px 14px;flex-shrink:0">選擇這個角度</button>
+        <button class="btn btn-primary" onclick="selectAngle(${i})" style="font-size:.8rem;padding:6px 14px;flex-shrink:0">選擇這個角度</button>
       </div>
       <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">適合讀者：${a.reader}</div>
       <div style="margin-bottom:8px"><span style="font-size:.78rem;padding:2px 8px;border-radius:20px;background:var(--warm);color:${relColor[a.product_relevance]||'var(--muted)'};font-weight:600">產品關聯：${a.product_relevance||'—'}</span></div>
@@ -2649,8 +2651,8 @@ function renderIdeation(data){
   document.getElementById('ideationResults').style.display='block';
 }
 function closeIdeationModal(){document.getElementById('ideationModal').classList.remove('on');}
-function selectAngle(title){
-  document.getElementById('settingsTopic').value=title;
+function selectAngle(i){
+  document.getElementById('settingsTopic').value=_ideationAngles[i].title;
   closeIdeationModal();
   showToast('✅ 已填入文章主題');
 }
