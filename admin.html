@@ -561,6 +561,12 @@
         <button class="btn btn-primary" onclick="saveDefaultRefArticle()">儲存預設</button>
       </div>
       <div class="form-card">
+        <h2>🔄 產生 articles-index.json</h2>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;line-height:1.7">第一次使用時執行，從現有 articles.json 產生輕量索引檔案，供前台讀取使用。</p>
+        <div class="save-status" id="syncIndexStatus"></div>
+        <button class="btn btn-primary" onclick="initSyncIndex()">立即產生</button>
+      </div>
+      <div class="form-card">
         <h2>🔄 重新產生所有文章</h2>
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;line-height:1.7">還原備份後、更新模板設計後、或更換網域後，點此一鍵重新產生所有文章 HTML 並更新 sitemap。</p>
         <div class="save-status" id="rebuildStatus"></div>
@@ -776,6 +782,8 @@ const CLOUD = { name:'dajib0ylm', preset:'catnourish' };
 let cfg = { token:'', owner:'', repo:'', branch:'main' };
 let articles=[], faqs=[], photos=[], authorTitles=[], pickerTarget=null, deleteTargetId=null, editingId=null;
 const ARTICLES_PATH='articles.json', FAQS_PATH='faqs.json', PHOTOS_PATH='photos.json', AUTHOR_CONFIG_PATH='author-config.json';
+const ARTICLES_INDEX_PATH='articles-index.json';
+const INDEX_FIELDS=['id','slug','title','excerpt','cover','coverAlt','emoji','tag','type','date','hideDate','draft','authorName','authorTitle','authorAvatar'];
 
 // ── GITHUB ──
 async function ghFetch(path,options={}){
@@ -803,6 +811,30 @@ async function putFile(path,content,sha,message){
   const res=await ghFetch(path,{method:'PUT',body:JSON.stringify(body)});
   if(!res.ok){const err=await res.json();throw new Error(err.message||'putFile failed');}
   return res.json();
+}
+async function initSyncIndex(){
+  setSaveStatus('syncIndexStatus','saving','⏳ 產生中...');
+  try{
+    await syncIndexFile(articles);
+    setSaveStatus('syncIndexStatus','ok','✅ 已產生 articles-index.json');
+    setTimeout(()=>hideSaveStatus('syncIndexStatus'),4000);
+  }catch(e){
+    setSaveStatus('syncIndexStatus','err','❌ 失敗：'+e.message);
+  }
+}
+async function syncIndexFile(articlesList){
+  const lightweight=articlesList.map(a=>{
+    const obj={};
+    INDEX_FIELDS.forEach(f=>{if(a[f]!==undefined)obj[f]=a[f];});
+    return obj;
+  });
+  let sha=null;
+  try{sha=await getFileSha(ARTICLES_INDEX_PATH);}catch(e){}
+  if(sha){
+    await putFile(ARTICLES_INDEX_PATH,lightweight,sha,'更新文章索引');
+  }else{
+    await createFile(ARTICLES_INDEX_PATH,lightweight,'建立文章索引');
+  }
 }
 async function createFile(path,content,message){
   const jsonStr=JSON.stringify(content,null,2);
@@ -1589,6 +1621,7 @@ async function publishArticle(){
       articles.unshift(articleData);
     }
     await putFile(ARTICLES_PATH,articles,sha,isEditing?`更新文章：${title}`:`新增文章：${title}`);
+    await syncIndexFile(articles);
 
     // 4. Auto-update sitemap.xml
     setSaveStatus('pubStatus','saving','⏳ 更新 Sitemap...');
@@ -1727,6 +1760,7 @@ async function saveDraftToGitHub() {
       articles.unshift(draftArticle);
     }
     await putFile(ARTICLES_PATH, articles, sha, `儲存草稿：${title}`);
+    await syncIndexFile(articles);
     // Stay on article: refresh list, update edit state
     renderArticleList();
     editingId = draftArticle.id;
@@ -1892,6 +1926,7 @@ async function executeDelete(){
     const{sha}=await getFile(ARTICLES_PATH);
     articles=articles.filter(a=>a.id!==id);
     await putFile(ARTICLES_PATH,articles,sha,'刪除文章：'+(target?.title||id));
+    await syncIndexFile(articles);
     // 同步刪除 GitHub 上的 HTML 檔
     if(slug){
       try{await deleteGithubFile(`articles/${slug}.html`);}
@@ -2486,6 +2521,7 @@ async function onDrop(e) {
   try {
     const { sha } = await getFile(ARTICLES_PATH);
     await putFile(ARTICLES_PATH, articles, sha, '更新文章排序');
+    await syncIndexFile(articles);
     setSaveStatus('delStatus', 'ok', '✅ 排序已儲存');
     setTimeout(() => hideSaveStatus('delStatus'), 3000);
   } catch(e) {

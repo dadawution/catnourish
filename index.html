@@ -1288,7 +1288,7 @@ async function init() {
   const t = Date.now();
   try {
     const [aRes, fRes] = await Promise.all([
-      fetch('articles.json?t=' + t),
+      fetch('articles-index.json?t=' + t),
       fetch('faqs.json?t=' + t)
     ]);
     articles = await aRes.json();
