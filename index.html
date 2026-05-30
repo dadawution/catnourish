@@ -1133,84 +1133,8 @@ function renderArticlesPage() {
 // ══════════════════════════════
 function openArticle(id) {
   const a = articles.find(x => x.id === id);
-  if (!a) return;
-  currentArticleId = id;
-  const related = articles.filter(x => x.id !== id && !x.draft).slice(0, 3);
-  const main = document.getElementById('articleMain');
-  main.innerHTML = `
-    <div class="article-breadcrumb">
-      <a onclick="goPage('home')">首頁</a> › 
-      <a onclick="filterAndGo('${a.tag}')">${a.tag}</a> › 
-      <span>${a.title.slice(0, 20)}...</span>
-    </div>
-    <div class="article-header">
-      <span class="article-card-cat ${catClass(a.tag)}" style="display:inline-block;margin-bottom:14px">${a.tag}</span>
-      <h1 class="article-h1">${a.title}</h1>
-      <div class="article-meta-row">
-        ${a.hideDate?'':'<div class="article-meta-item">📅 '+a.date+'</div>'}
-        <div class="article-meta-item">🐾 Cat Care Journal</div>
-        <div class="article-meta-item">📌 ${a.type}</div>
-      </div>
-    </div>
-    ${a.cover ? `<div class="article-cover"><img src="${optimizeCloudinaryUrl(a.cover)}" alt="${a.coverAlt||a.title}" loading="lazy">${a.coverAlt ? `<div class="article-cover-caption">${a.coverAlt}</div>` : ''}</div>` : ''}
-    <div class="article-summary"><strong>文章重點：</strong>${a.excerpt}</div>
-    ${buildToc(a.body)}
-    <div class="article-body">${bodyWithAnchors(a.body)}</div>
-    ${a.tags && a.tags.length ? `<div class="article-tags"><span class="article-tags-label">標籤：</span>${a.tags.map(t=>`<span class="article-tag">#${t}</span>`).join('')}</div>` : ''}
-    ${a.faq && a.faq.length ? `
-    <div class="article-faq-section">
-      <div class="article-faq-title">📋 常見問答</div>
-      <div class="faq-list">${a.faq.map((f, i) => `
-        <div class="faq-item" id="afaq${id}_${i}">
-          <div class="faq-q" onclick="toggleFaq('afaq${id}_${i}')"><span>${f.q}</span><span class="faq-q-icon">▼</span></div>
-          <div class="faq-a"><div class="faq-a-inner">${f.a}</div></div>
-        </div>`).join('')}
-      </div>
-    </div>` : ''}
-    <div class="article-cta">
-      <h3>找到更多貓咪照護知識</h3>
-      <p>貓咪照護飲食誌整理了老貓營養、副食選擇、低磷低鈉飲食等實用主題，幫助你為貓咪做出有依據的照護決定。</p>
-      <button class="btn-cta" onclick="goPage('articles')">瀏覽更多文章 →</button>
-    </div>
-    <div class="related-articles">
-      <div class="related-title">延伸閱讀</div>
-      <div class="related-list">${related.map(r => `
-        <div class="related-item" onclick="openArticle(${r.id})">
-          <div class="related-thumb">${r.emoji || '📝'}</div>
-          <div class="related-info">
-            <div class="related-cat">${r.tag}</div>
-            <div class="related-title-text">${r.title}</div>
-          </div>
-        </div>`).join('')}
-      </div>
-    </div>`;
-  const sidebar = document.getElementById('articleSidebar');
-  sidebar.innerHTML = `
-    <div class="sidebar-card sidebar-brand">
-      <h4>關於本站</h4>
-      <p>貓咪照護飲食誌是獨立的第三方知識站，不隸屬任何品牌，只整理對飼主真正有用的貓咪照護知識。</p>
-      <button class="btn-sidebar" onclick="goPage('about')">關於我們</button>
-    </div>
-    <div class="sidebar-card">
-      <h4>知識主題</h4>
-      <div class="sidebar-topics">
-        ${['飲食照護','熟齡貓照護','副食與營養','品牌觀點','常見問題'].map(t => `
-        <div class="sidebar-topic" onclick="filterAndGo('${t}')">
-          <span>${t}</span>
-          <span>${articles.filter(x => x.tag === t && !x.draft).length} 篇</span>
-        </div>`).join('')}
-      </div>
-    </div>
-    <div class="sidebar-card">
-      <h4>快速問答</h4>
-      <div class="faq-list">${faqs.slice(0, 3).map((f, i) => `
-        <div class="faq-item" id="sfaq${i}">
-          <div class="faq-q" onclick="toggleFaq('sfaq${i}')"><span style="font-size:0.82rem">${f.q}</span><span class="faq-q-icon">▼</span></div>
-          <div class="faq-a"><div class="faq-a-inner">${f.a}</div></div>
-        </div>`).join('')}
-      </div>
-    </div>`;
-  goPage('article');
+  if (!a || !a.slug) return;
+  window.location.href = 'articles/' + a.slug + '.html';
 }
 
 // ══════════════════════════════
