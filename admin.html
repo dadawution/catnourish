@@ -537,11 +537,28 @@
 
 數字與知識：成貓每日水分需求約每公斤 40-60ml；乾糧含水量 6-10%..."></textarea>
         </div>
+        <div class="form-group">
+          <label>參考文章風格 <span style="color:var(--muted);font-size:.8em">選填</span></label>
+          <p style="font-size:.8rem;color:var(--muted);margin-bottom:8px;line-height:1.6">選擇一篇文章作為風格參考，AI 會以該文章的觀點深度、段落銜接和核心論點展開邏輯為基準，不會複製內容。</p>
+          <select id="aRefArticle" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:white;font-size:.9rem;color:var(--ink)">
+            <option value="">— 不使用參考文章 —</option>
+          </select>
+        </div>
         <div class="save-status" id="settingsSaved"></div>
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="copyPrompt()">📋 複製完整提示詞</button>
           <button class="btn btn-primary" onclick="saveSettings()">儲存設定</button>
         </div>
+      </div>
+      <div class="form-card">
+        <h2>📌 預設參考文章</h2>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;line-height:1.7">設定後，每次新開後台預設選取這篇文章作為風格參考。</p>
+        <div class="form-group">
+          <select id="defaultRefArticleSelect" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:white;font-size:.9rem;color:var(--ink)">
+            <option value="">— 不使用 —</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="saveDefaultRefArticle()">儲存預設</button>
       </div>
       <div class="form-card">
         <h2>🔄 重新產生所有文章</h2>
@@ -838,7 +855,7 @@ function enterAdmin(){
   document.getElementById('setupScreen').style.display='none';
   document.getElementById('adminApp').style.display='block';
   document.getElementById('repoLabel').textContent=`${cfg.owner}/${cfg.repo}`;
-  renderArticleList();renderFaqList();renderPhotoGrid();loadSettings();renderAuthorTitleSelect();
+  renderArticleList();renderFaqList();renderPhotoGrid();loadSettings();renderAuthorTitleSelect();renderRefArticleSelect();
 }
 function disconnect(){localStorage.removeItem('bio_token');location.reload();}
 
@@ -1213,15 +1230,26 @@ function buildPromptText(){
   ]
 }`;
   const background=document.getElementById('settingsBackground').value.trim();
+  const refSlug=(document.getElementById('aRefArticle')||{}).value||'';
+  let refText='';
+  if(refSlug){
+    const refArt=articles.find(a=>a.slug===refSlug);
+    if(refArt&&refArt.body){
+      refText='\n\n參考文章風格：請以以下文章的觀點深度、段落銜接方式和核心論點展開邏輯為風格基準，不要複製內容，只參考寫作方式：\n\n'+refArt.body;
+    }
+  }
   return sys+'\n\n'
     +'文章主題：'+(topic||'[請填入主題]')+'\n'
     +'置入產品：'+(product||'無')+'\n'
     +'置入強度：'+(intensity||'無')+'\n'
     +'特殊補充：'+(extra||'無')+'\n'
-    +'主題背景知識：'+(background||'無');
+    +'主題背景知識：'+(background||'無')
+    +refText;
 }
 function copyPrompt(){
   saveSettings();
+  const refSlug=(document.getElementById('aRefArticle')||{}).value||'';
+  localStorage.setItem('lastRefArticle',refSlug);
   const text=buildPromptText();
   navigator.clipboard.writeText(text).then(()=>showToast('✅ 提示詞已複製！貼到 Claude/ChatGPT/Gemini 即可'));
 }
@@ -1877,6 +1905,26 @@ async function executeDelete(){
 // ── 撰稿人單位選單 ──
 const DEFAULT_AUTHOR_TITLES = ['Cat Care Journal 編輯部','獸醫師監修','動物營養師'];
 
+function renderRefArticleSelect(){
+  const published=articles.filter(a=>!a.draft);
+  const baseOpt='<option value="">— 不使用參考文章 —</option>';
+  const baseOpt2='<option value="">— 不使用 —</option>';
+  const opts=published.map(a=>`<option value="${a.slug}">${a.title}</option>`).join('');
+  const sel=document.getElementById('aRefArticle');
+  const def=document.getElementById('defaultRefArticleSelect');
+  if(sel)sel.innerHTML=baseOpt+opts;
+  if(def)def.innerHTML=baseOpt2+opts;
+  const last=localStorage.getItem('lastRefArticle');
+  const dflt=localStorage.getItem('defaultRefArticle')||'';
+  const val=(last!==null)?last:dflt;
+  if(sel)sel.value=val;
+  if(def)def.value=dflt;
+}
+function saveDefaultRefArticle(){
+  const val=(document.getElementById('defaultRefArticleSelect')||{}).value||'';
+  localStorage.setItem('defaultRefArticle',val);
+  showToast('✅ 預設參考文章已儲存');
+}
 function renderAuthorTitleSelect(selectedValue=''){
   const sel = document.getElementById('aAuthorTitle');
   if(!sel) return;
