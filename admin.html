@@ -533,7 +533,9 @@
         <div class="form-group">
           <label>主題背景知識 <span style="color:var(--muted);font-size:.8em">選填</span></label>
           <p style="font-size:.8rem;color:var(--muted);margin-bottom:8px;line-height:1.6">這篇文章的核心知識點、重要數字或切入觀點，AI 會以這些為基礎撰寫。可用「✨ 幫我發想」按鈕自動生成。</p>
-          <textarea id="settingsBackground" style="min-height:96px" placeholder="例如：成貓每日水分需求約每公斤 40 至 60 毫升；乾糧含水量僅 6-10%..."></textarea>
+          <textarea id="settingsBackground" style="min-height:96px" placeholder="核心論點：這篇文章最重要的一個觀點（例如：現代家貓以乾糧為主，和天性設計產生落差，這是補水問題的根源）
+
+數字與知識：成貓每日水分需求約每公斤 40-60ml；乾糧含水量 6-10%..."></textarea>
         </div>
         <div class="save-status" id="settingsSaved"></div>
         <div class="btn-row">
@@ -1067,6 +1069,9 @@ function buildPromptText(){
 第一段是全文概要，不加任何標題。
 若文章有需要特別注意的重要警示，在第一段後立即加入：
 「・注意：[警示內容]」
+
+## 核心論點
+若「主題背景知識」欄位有提供「核心論點」，這個觀點必須在文章開頭第一段或第二段清楚呈現，並貫穿全文。每個 H2 段落的展開，都要和這個核心觀點有邏輯連結，讓讀者讀完整篇文章後能帶走這一個清楚的認知。
 
 ## 寫作風格
 
@@ -2607,7 +2612,7 @@ function openIdeationModal(){
   const topic=document.getElementById('settingsTopic').value.trim();
   if(!topic){showToast('請先填入文章主題');return;}
   const product=document.getElementById('settingsProduct').value.trim();
-  const prompt='你是貓咪照護飲食誌的內容策略顧問。根據以下主題，提供具體的文章切入角度與背景知識建議。\n\n主題：'+topic+'\n置入產品：'+(product||'無')+'\n\n請只回傳以下 JSON 格式，不要有任何其他說明文字：\n{\n  "angles": [\n    {\n      "title": "具體切入角度標題",\n      "reader": "適合哪種讀者",\n      "product_relevance": "與置入產品的關聯性（高／中／低）",\n      "reason": "為什麼這個角度好"\n    }\n  ],\n  "background_knowledge": "這個主題的核心知識點與重要數字，2至4條，格式簡短，可直接貼進主題背景知識欄位"\n}';
+  const prompt='你是貓咪照護飲食誌的內容策略顧問。根據以下主題，提供具體的文章切入角度與背景知識建議。\n\n主題：'+topic+'\n置入產品：'+(product||'無')+'\n\n請只回傳以下 JSON 格式，不要有任何其他說明文字：\n{\n  "angles": [\n    {\n      "title": "具體切入角度標題",\n      "reader": "適合哪種讀者",\n      "product_relevance": "與置入產品的關聯性（高／中／低）",\n      "reason": "為什麼這個角度好",\n      "core_argument": "這篇文章最重要的一個核心觀點，一句話說清楚，例如：貓咪天性來自乾燥環境，現代乾糧生活造成水分落差，這是補水問題的根源"\n    }\n  ],\n  "background_knowledge": "核心論點：[一句話說明這篇文章最重要的觀點]\\n\\n數字與知識：[2至4條核心數字和知識點]"\n}';
   navigator.clipboard.writeText(prompt).catch(()=>{});
   document.getElementById('ideationJsonInput').value='';
   document.getElementById('ideationResults').style.display='none';
