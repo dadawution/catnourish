@@ -11,10 +11,10 @@
     "type": "問題型",
     "date": "2026-05-31",
     "hideDate": false,
-    "draft": true,
-    "authorName": "",
-    "authorTitle": "",
-    "authorAvatar": ""
+    "draft": false,
+    "authorName": "Darren",
+    "authorTitle": "Cat Care Journal 編輯部",
+    "authorAvatar": "https://res.cloudinary.com/dajib0ylm/image/upload/v1780236247/catnourish/xlrylcyqpunweiuf9fip.png"
   },
   {
     "id": 1780140252871,
