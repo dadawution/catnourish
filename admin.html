@@ -538,6 +538,10 @@
 數字與知識：成貓每日水分需求約每公斤 40-60ml；乾糧含水量 6-10%..."></textarea>
         </div>
         <div class="form-group">
+          <label>品牌產品背景 <span style="color:var(--muted);font-size:.8em">選填</span></label>
+          <textarea id="settingsBrandBg" style="min-height:80px" placeholder="放入產品相關資料，例如原料、產地、標示特色等，AI 寫作時會作為知識背景參考，不一定直接出現在文章中"></textarea>
+        </div>
+        <div class="form-group">
           <label>參考文章風格 <span style="color:var(--muted);font-size:.8em">選填</span></label>
           <p style="font-size:.8rem;color:var(--muted);margin-bottom:8px;line-height:1.6">選擇一篇文章作為風格參考，AI 會以該文章的觀點深度、段落銜接和核心論點展開邏輯為基準，不會複製內容。</p>
           <select id="aRefArticle" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:white;font-size:.9rem;color:var(--ink)">
@@ -1083,6 +1087,7 @@ function loadSettings(){
   document.getElementById('settingsIntensity').value=localStorage.getItem('bio_intensity')||'';
   document.getElementById('settingsExtra').value=localStorage.getItem('bio_extra')||'';
   document.getElementById('settingsBackground').value=localStorage.getItem('bio_background')||'';
+  document.getElementById('settingsBrandBg').value=localStorage.getItem('bio_brand_bg')||'';
   const lastBackup=localStorage.getItem('bio_last_backup');
   const el=document.getElementById('lastBackupTime');
   if(el&&lastBackup)el.textContent=lastBackup;
@@ -1093,6 +1098,7 @@ function saveSettings(){
   localStorage.setItem('bio_intensity',document.getElementById('settingsIntensity').value);
   localStorage.setItem('bio_extra',document.getElementById('settingsExtra').value.trim());
   localStorage.setItem('bio_background',document.getElementById('settingsBackground').value.trim());
+  localStorage.setItem('bio_brand_bg',document.getElementById('settingsBrandBg').value.trim());
   setSaveStatus('settingsSaved','ok','✅ 設定已儲存');
   showToast('✅ 設定已儲存');
   setTimeout(()=>hideSaveStatus('settingsSaved'),3000);
@@ -1262,6 +1268,7 @@ function buildPromptText(){
   ]
 }`;
   const background=document.getElementById('settingsBackground').value.trim();
+  const brandBg=document.getElementById('settingsBrandBg').value.trim();
   const refSlug=(document.getElementById('aRefArticle')||{}).value||'';
   let refText='';
   if(refSlug){
@@ -1270,12 +1277,16 @@ function buildPromptText(){
       refText='\n\n參考文章風格：請以以下文章的觀點深度、段落銜接方式和核心論點展開邏輯為風格基準，不要複製內容，只參考寫作方式：\n\n'+refArt.body;
     }
   }
+  const brandBgBlock=brandBg
+    ? '\n\n## 品牌產品背景（寫作知識參考）\n以下是本站合作品牌的產品資訊。即使文章不直接提及品牌，寫作時可將這些特色自然融入為選擇標準或知識觀點。\n\n'+brandBg
+    : '';
   return sys+'\n\n'
+    +'主題背景知識：'+(background||'無')
+    +brandBgBlock+'\n\n'
     +'文章主題：'+(topic||'[請填入主題]')+'\n'
     +'置入產品：'+(product||'無')+'\n'
     +'置入強度：'+(intensity||'無')+'\n'
-    +'特殊補充：'+(extra||'無')+'\n'
-    +'主題背景知識：'+(background||'無')
+    +'特殊補充：'+(extra||'無')
     +refText;
 }
 function copyPrompt(){
