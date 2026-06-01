@@ -1697,17 +1697,19 @@ function closeEditor(){
 const DRAFT_KEY = 'bio_draft';
 
 async function saveDraft() {
+  console.log('[saveDraft] 開始');
   const draftBtn = document.getElementById('draftBtn');
-  if (draftBtn.disabled) return;
+  if (draftBtn.disabled) { console.log('[saveDraft] 按鈕已 disabled，跳過'); return; }
   const title = document.getElementById('aTitle').value.trim();
   if (!title) { alert('請至少填寫標題再儲存草稿'); return; }
   const isEditing = editingId !== null;
   const existingArticle = isEditing ? articles.find(a => a.id === editingId) : null;
+  console.log('[saveDraft] isEditing:', isEditing, '| editingId:', editingId, '| existingArticle.draft:', existingArticle?.draft);
   const faqRaw = document.getElementById('aFaq').value.trim();
   const faqParsed = faqRaw ? faqRaw.split('\n').filter(l => l.includes('::')).map(l => { const [q, ...rest] = l.split('::'); return { q: q.trim(), a: rest.join('::').trim() }; }) : [];
 
   if (isEditing && existingArticle && !existingArticle.draft) {
-    // Editing published article: save to localStorage only
+    console.log('[saveDraft] 走 localStorage 路徑（編輯已發布文章）');
     const draftData = {
       editingId,
       tag: document.getElementById('aTag').value,
@@ -1729,14 +1731,17 @@ async function saveDraft() {
       savedAt: new Date().toLocaleString('zh-TW'),
     };
     localStorage.setItem(DRAFT_KEY + '_' + editingId, JSON.stringify(draftData));
+    console.log('[saveDraft] localStorage 儲存完成');
     showToast('💾 草稿已暫存（不影響已發布版本）');
   } else {
-    // New article or existing draft: save to GitHub with draft:true
+    console.log('[saveDraft] 走 GitHub 路徑');
     await saveDraftToGitHub();
   }
+  console.log('[saveDraft] 結束');
 }
 
 async function saveDraftToGitHub() {
+  console.log('[saveDraftToGitHub] 開始');
   const title = document.getElementById('aTitle').value.trim();
   const body = document.getElementById('aBody').value.trim() || ' ';
   const faqRaw = document.getElementById('aFaq').value.trim();
@@ -1745,6 +1750,7 @@ async function saveDraftToGitHub() {
   const existingArticle = isEditing ? articles.find(a => a.id === editingId) : null;
   const existingSlug = existingArticle ? existingArticle.slug : null;
   const slug = (document.getElementById('aSlug').value.trim() || existingSlug || generateSlug(title)).toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/, '') || generateSlug(title);
+  console.log('[saveDraftToGitHub] title:', title, '| slug:', slug, '| isEditing:', isEditing);
   const draftArticle = {
     id: isEditing ? editingId : Date.now(),
     tag: document.getElementById('aTag').value,
@@ -1765,16 +1771,21 @@ async function saveDraftToGitHub() {
   };
   document.getElementById('draftBtn').disabled = true;
   try {
+    console.log('[saveDraftToGitHub] 步驟1: 取得 articles.json SHA...');
     const { sha } = await getFile(ARTICLES_PATH);
+    console.log('[saveDraftToGitHub] 步驟1 完成, sha:', sha);
     if (isEditing) {
       const idx = articles.findIndex(a => a.id === editingId);
       if (idx >= 0) articles[idx] = draftArticle; else articles.unshift(draftArticle);
     } else {
       articles.unshift(draftArticle);
     }
+    console.log('[saveDraftToGitHub] 步驟2: 寫入 articles.json...');
     await putFile(ARTICLES_PATH, articles, sha, `儲存草稿：${title}`);
+    console.log('[saveDraftToGitHub] 步驟2 完成');
+    console.log('[saveDraftToGitHub] 步驟3: 同步 index...');
     await syncIndexFile(articles);
-    // Stay on article: refresh list, update edit state
+    console.log('[saveDraftToGitHub] 步驟3 完成');
     renderArticleList();
     editingId = draftArticle.id;
     document.getElementById('aSlug').value = slug;
@@ -1783,7 +1794,11 @@ async function saveDraftToGitHub() {
     const closeBtn = document.getElementById('closeEditBtn');
     if (closeBtn) closeBtn.style.display = '';
     showToast('💾 草稿已儲存！');
-  } catch(e) { showToast('❌ 儲存失敗：' + e.message); }
+    console.log('[saveDraftToGitHub] 全部完成');
+  } catch(e) {
+    console.error('[saveDraftToGitHub] 錯誤:', e);
+    showToast('❌ 儲存失敗：' + e.message);
+  }
   document.getElementById('draftBtn').disabled = false;
 }
 
