@@ -1696,14 +1696,16 @@ function closeEditor(){
 // ── DRAFT ──
 const DRAFT_KEY = 'bio_draft';
 
-function saveDraft() {
+async function saveDraft() {
+  const draftBtn = document.getElementById('draftBtn');
+  if (draftBtn.disabled) return;
   const title = document.getElementById('aTitle').value.trim();
   if (!title) { alert('請至少填寫標題再儲存草稿'); return; }
   const isEditing = editingId !== null;
   const existingArticle = isEditing ? articles.find(a => a.id === editingId) : null;
   const faqRaw = document.getElementById('aFaq').value.trim();
   const faqParsed = faqRaw ? faqRaw.split('\n').filter(l => l.includes('::')).map(l => { const [q, ...rest] = l.split('::'); return { q: q.trim(), a: rest.join('::').trim() }; }) : [];
-  
+
   if (isEditing && existingArticle && !existingArticle.draft) {
     // Editing published article: save to localStorage only
     const draftData = {
@@ -1730,7 +1732,7 @@ function saveDraft() {
     showToast('💾 草稿已暫存（不影響已發布版本）');
   } else {
     // New article or existing draft: save to GitHub with draft:true
-    saveDraftToGitHub();
+    await saveDraftToGitHub();
   }
 }
 
