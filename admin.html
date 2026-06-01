@@ -789,6 +789,17 @@ const ARTICLES_PATH='articles.json', FAQS_PATH='faqs.json', PHOTOS_PATH='photos.
 const ARTICLES_INDEX_PATH='articles-index.json';
 const INDEX_FIELDS=['id','slug','title','excerpt','cover','coverAlt','emoji','tag','type','date','hideDate','draft','authorName','authorTitle','authorAvatar'];
 
+// ── BASE64 ──
+function encodeBase64(str){
+  const bytes=new TextEncoder().encode(str);
+  let binary='';
+  const chunk=8192;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+  }
+  return btoa(binary);
+}
+
 // ── GITHUB ──
 async function ghFetch(path,options={}){
   const url=`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
@@ -810,7 +821,7 @@ async function getFileSha(path){
 }
 async function putFile(path,content,sha,message){
   const jsonStr=JSON.stringify(content,null,2);
-  const encoded=btoa(String.fromCharCode(...new TextEncoder().encode(jsonStr)));
+  const encoded=encodeBase64(jsonStr);
   const body={message,content:encoded,sha,branch:cfg.branch};
   const res=await ghFetch(path,{method:'PUT',body:JSON.stringify(body)});
   if(!res.ok){const err=await res.json();throw new Error(err.message||'putFile failed');}
@@ -842,7 +853,7 @@ async function syncIndexFile(articlesList){
 }
 async function createFile(path,content,message){
   const jsonStr=JSON.stringify(content,null,2);
-  const encoded=btoa(String.fromCharCode(...new TextEncoder().encode(jsonStr)));
+  const encoded=encodeBase64(jsonStr);
   const body={message,content:encoded,branch:cfg.branch};
   const res=await ghFetch(path,{method:'PUT',body:JSON.stringify(body)});
   if(!res.ok){const err=await res.json();throw new Error(err.message||'createFile failed');}
@@ -1018,7 +1029,7 @@ async function rebuildAllArticles(){
       const allArticles=articles;
       const{html,slug}=await buildArticleHtml(article,allArticles);
       const htmlPath='articles/'+slug+'.html';
-      const htmlEncoded=btoa(String.fromCharCode(...new TextEncoder().encode(html)));
+      const htmlEncoded=encodeBase64(html);
       let htmlSha=null;
       try{htmlSha=await getFileSha(htmlPath);}catch(e){}
       const body={message:`重新產生文章：${article.title}`,content:htmlEncoded,branch:cfg.branch};
@@ -1547,7 +1558,7 @@ async function updateSitemap(){
       xml+=`  <url><loc>${base}/articles/${a.slug}.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>\n`;
     });
     xml+='</urlset>';
-    const encoded=btoa(String.fromCharCode(...new TextEncoder().encode(xml)));
+    const encoded=encodeBase64(xml);
     let smSha=null;
     try{smSha=await getFileSha('sitemap.xml');}catch(e){}
     const body={message:'更新 sitemap',content:encoded,branch:cfg.branch};
@@ -1601,7 +1612,7 @@ async function publishArticle(){
     const htmlPath='articles/'+slug+'.html';
     let htmlSha=null;
     try{htmlSha=await getFileSha(htmlPath);}catch(e){}
-    const htmlEncoded=btoa(String.fromCharCode(...new TextEncoder().encode(html)));
+    const htmlEncoded=encodeBase64(html);
     async function putArticleHtml(sha){
       const body={message:(isEditing?'更新':'新增')+'文章頁面：'+title,content:htmlEncoded,branch:cfg.branch};
       if(sha)body.sha=sha;
@@ -2026,7 +2037,7 @@ async function saveCustomAuthorTitle(){
   try{
     let sha=null;
     try{sha=await getFileSha(AUTHOR_CONFIG_PATH);}catch(e){}
-    const body={message:'新增撰稿人單位：'+val, content:btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify({titles:authorTitles},null,2)))), branch:cfg.branch};
+    const body={message:'新增撰稿人單位：'+val, content:encodeBase64(JSON.stringify({titles:authorTitles},null,2)), branch:cfg.branch};
     if(sha)body.sha=sha;
     await ghFetch(AUTHOR_CONFIG_PATH,{method:'PUT',body:JSON.stringify(body)});
     renderAuthorTitleSelect(val);
