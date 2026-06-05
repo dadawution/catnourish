@@ -2,7 +2,7 @@
   {
     "id": 1780654797370,
     "slug": "food-cat-cannot-eat",
-    "title": "貓咪不能吃什麼？10種貓咪不能吃的人類食物、誤食後怎麼處理",
+    "title": "貓咪不能吃什麼？10種貓咪不能吃的人類食物、誤食後處理方式",
     "excerpt": "整理貓咪常見不能吃的人類食物類型，包括巧克力、洋蔥、葡萄、酪梨、柑橘類與生蛋白等，同時說明誤食後的觀察重點與處理步驟，並說明日常怎麼預防。",
     "cover": "",
     "coverAlt": "",
@@ -11,7 +11,7 @@
     "type": "問題型",
     "date": "2026-06-05",
     "hideDate": false,
-    "draft": true,
+    "draft": false,
     "authorName": "Emily",
     "authorTitle": "",
     "authorAvatar": ""
