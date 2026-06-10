@@ -844,7 +844,9 @@ async function syncIndexFile(articlesList){
     return obj;
   });
   let sha=null;
-  try{sha=await getFileSha(ARTICLES_INDEX_PATH);}catch(e){}
+  try{sha=await getFileSha(ARTICLES_INDEX_PATH);}catch(e){
+    if(!/404|Not Found/i.test(e.message))throw e;
+  }
   if(sha){
     await putFile(ARTICLES_INDEX_PATH,lightweight,sha,'更新文章索引');
   }else{
@@ -1601,17 +1603,15 @@ async function publishArticle(){
   setSaveStatus('pubStatus','saving',isEditing?'⏳ 更新文章中...':'⏳ 產生文章頁面中...');
   document.getElementById('pubBtn').disabled=true;
   try{
-    // 1. Build article HTML
+    // 1. Build article HTML (no GitHub IO)
     setSaveStatus('pubStatus','saving','⏳ 產生文章 HTML...');
     const tempArticles=isEditing?articles.map(a=>a.id===editingId?articleData:a):[articleData,...articles];
     const{html,slug}=await buildArticleHtml(articleData,tempArticles);
     articleData.slug=slug;
 
-    // 2. Save article HTML to articles/ folder
-    setSaveStatus('pubStatus','saving','⏳ 上傳文章頁面...');
+    // 2. Write HTML — fetch SHA immediately before write
+    setSaveStatus('pubStatus','saving','⏳ 上傳文章頁面（articles/'+slug+'.html）...');
     const htmlPath='articles/'+slug+'.html';
-    let htmlSha=null;
-    try{htmlSha=await getFileSha(htmlPath);}catch(e){}
     const htmlEncoded=encodeBase64(html);
     async function putArticleHtml(sha){
       const body={message:(isEditing?'更新':'新增')+'文章頁面：'+title,content:htmlEncoded,branch:cfg.branch};
@@ -1621,9 +1621,8 @@ async function publishArticle(){
         const rawText=await res.text();
         let errMsg=rawText;
         try{const parsed=JSON.parse(rawText);errMsg=parsed.message||rawText;}catch(e){}
-        // If sha wasn't supplied, file exists — fetch sha and retry once
         if(errMsg.includes('sha')&&!sha){
-          setSaveStatus('pubStatus','saving','⏳ 重新取得檔案資訊...');
+          setSaveStatus('pubStatus','saving','⏳ 重新取得 HTML 檔案資訊...');
           const freshSha=await getFileSha(htmlPath);
           return putArticleHtml(freshSha);
         }
@@ -1631,28 +1630,50 @@ async function publishArticle(){
       }
       return res;
     }
-    await putArticleHtml(htmlSha);
+    let htmlSha=null;
+    try{htmlSha=await getFileSha(htmlPath);}catch(e){}
+    try{
+      await putArticleHtml(htmlSha);
+    }catch(e){
+      throw new Error('articles/'+slug+'.html 寫入失敗：'+e.message);
+    }
 
-    // 3. Update articles.json
-    setSaveStatus('pubStatus','saving','⏳ 更新文章索引...');
-    const{sha}=await getFile(ARTICLES_PATH);
+    // 3. Write articles.json — fetch SHA immediately before write
+    setSaveStatus('pubStatus','saving','⏳ 更新 articles.json...');
+    let articlesSha;
+    try{
+      const result=await getFile(ARTICLES_PATH);
+      articlesSha=result.sha;
+    }catch(e){
+      throw new Error('articles.json SHA 取得失敗：'+e.message);
+    }
     if(isEditing){
       const idx=articles.findIndex(a=>a.id===editingId);
       if(idx>=0)articles[idx]=articleData;else articles.unshift(articleData);
     }else{
       articles.unshift(articleData);
     }
-    await putFile(ARTICLES_PATH,articles,sha,isEditing?`更新文章：${title}`:`新增文章：${title}`);
-    await syncIndexFile(articles);
+    try{
+      await putFile(ARTICLES_PATH,articles,articlesSha,isEditing?`更新文章：${title}`:`新增文章：${title}`);
+    }catch(e){
+      throw new Error('articles.json 寫入失敗：'+e.message);
+    }
 
-    // 4. Auto-update sitemap.xml
+    // 4. Write articles-index.json — syncIndexFile fetches SHA internally
+    setSaveStatus('pubStatus','saving','⏳ 更新 articles-index.json...');
+    try{
+      await syncIndexFile(articles);
+    }catch(e){
+      throw new Error('articles-index.json 寫入失敗：'+e.message);
+    }
+
+    // 5. Auto-update sitemap.xml
     setSaveStatus('pubStatus','saving','⏳ 更新 Sitemap...');
     await updateSitemap();
 
     clearStatusAndRenderList(slug, articleData.id, isEditing);
     const articleUrl='https://catcare.tw/articles/'+slug+'.html';
     setSaveStatus('pubStatus','ok','✅ '+(isEditing?'更新':'發布')+'成功！<a href="'+articleUrl+'" target="_blank" style="margin-left:8px;color:var(--teal)">查看文章 ↗</a>');
-    // Clear local draft if exists
     if(isEditing)localStorage.removeItem(DRAFT_KEY+'_'+editingId);
     showToast(isEditing?'✅ 文章已更新！':'✅ 文章已發布！');
     setTimeout(()=>hideSaveStatus('pubStatus'),6000);
