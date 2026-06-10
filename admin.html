@@ -1802,10 +1802,18 @@ async function saveDraftToGitHub() {
     slug, draft: true
   };
   document.getElementById('draftBtn').disabled = true;
+  setSaveStatus('pubStatus','saving','⏳ 儲存草稿中...');
   try {
+    // Step 1: Write articles.json — fetch SHA immediately before write
     console.log('[saveDraftToGitHub] 步驟1: 取得 articles.json SHA...');
-    const { sha } = await getFile(ARTICLES_PATH);
-    console.log('[saveDraftToGitHub] 步驟1 完成, sha:', sha);
+    let articlesSha;
+    try {
+      const result = await getFile(ARTICLES_PATH);
+      articlesSha = result.sha;
+    } catch(e) {
+      throw new Error('articles.json SHA 取得失敗：' + e.message);
+    }
+    console.log('[saveDraftToGitHub] 步驟1 完成, sha:', articlesSha);
     if (isEditing) {
       const idx = articles.findIndex(a => a.id === editingId);
       if (idx >= 0) articles[idx] = draftArticle; else articles.unshift(draftArticle);
@@ -1813,11 +1821,22 @@ async function saveDraftToGitHub() {
       articles.unshift(draftArticle);
     }
     console.log('[saveDraftToGitHub] 步驟2: 寫入 articles.json...');
-    await putFile(ARTICLES_PATH, articles, sha, `儲存草稿：${title}`);
+    try {
+      await putFile(ARTICLES_PATH, articles, articlesSha, `儲存草稿：${title}`);
+    } catch(e) {
+      throw new Error('articles.json 寫入失敗：' + e.message);
+    }
     console.log('[saveDraftToGitHub] 步驟2 完成');
+
+    // Step 2: Write articles-index.json — syncIndexFile fetches SHA internally
     console.log('[saveDraftToGitHub] 步驟3: 同步 index...');
-    await syncIndexFile(articles);
+    try {
+      await syncIndexFile(articles);
+    } catch(e) {
+      throw new Error('articles-index.json 寫入失敗：' + e.message);
+    }
     console.log('[saveDraftToGitHub] 步驟3 完成');
+
     renderArticleList();
     editingId = draftArticle.id;
     document.getElementById('aSlug').value = slug;
@@ -1825,11 +1844,13 @@ async function saveDraftToGitHub() {
     document.getElementById('formModeLabel').textContent = '✏️ 編輯文章（草稿）';
     const closeBtn = document.getElementById('closeEditBtn');
     if (closeBtn) closeBtn.style.display = '';
+    setSaveStatus('pubStatus','ok','✅ 草稿已儲存！');
     showToast('💾 草稿已儲存！');
+    setTimeout(() => hideSaveStatus('pubStatus'), 5000);
     console.log('[saveDraftToGitHub] 全部完成');
   } catch(e) {
     console.error('[saveDraftToGitHub] 錯誤:', e);
-    showToast('❌ 儲存失敗：' + e.message);
+    setSaveStatus('pubStatus','err','❌ 儲存草稿失敗：' + e.message);
   }
   document.getElementById('draftBtn').disabled = false;
 }
