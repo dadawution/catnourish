@@ -1638,14 +1638,15 @@ async function publishArticle(){
       throw new Error('articles/'+slug+'.html 寫入失敗：'+e.message);
     }
 
-    // 3. Write articles.json — fetch SHA immediately before write
+    // 3. Write articles.json — fetch fresh content+SHA immediately before write
     setSaveStatus('pubStatus','saving','⏳ 更新 articles.json...');
     let articlesSha;
     try{
       const result=await getFile(ARTICLES_PATH);
       articlesSha=result.sha;
+      articles=result.content;
     }catch(e){
-      throw new Error('articles.json SHA 取得失敗：'+e.message);
+      throw new Error('articles.json 取得失敗：'+e.message);
     }
     if(isEditing){
       const idx=articles.findIndex(a=>a.id===editingId);
@@ -1804,14 +1805,15 @@ async function saveDraftToGitHub() {
   document.getElementById('draftBtn').disabled = true;
   setSaveStatus('pubStatus','saving','⏳ 儲存草稿中...');
   try {
-    // Step 1: Write articles.json — fetch SHA immediately before write
-    console.log('[saveDraftToGitHub] 步驟1: 取得 articles.json SHA...');
+    // Step 1: Write articles.json — fetch fresh content+SHA immediately before write
+    console.log('[saveDraftToGitHub] 步驟1: 取得 articles.json 最新內容...');
     let articlesSha;
     try {
       const result = await getFile(ARTICLES_PATH);
       articlesSha = result.sha;
+      articles = result.content;
     } catch(e) {
-      throw new Error('articles.json SHA 取得失敗：' + e.message);
+      throw new Error('articles.json 取得失敗：' + e.message);
     }
     console.log('[saveDraftToGitHub] 步驟1 完成, sha:', articlesSha);
     if (isEditing) {
@@ -2004,8 +2006,8 @@ async function executeDelete(){
     // 找到要刪除的文章 slug，準備一起刪 HTML
     const target=articles.find(a=>a.id===id);
     const slug=target?.slug;
-    const{sha}=await getFile(ARTICLES_PATH);
-    articles=articles.filter(a=>a.id!==id);
+    const{content:freshArticles,sha}=await getFile(ARTICLES_PATH);
+    articles=freshArticles.filter(a=>a.id!==id);
     await putFile(ARTICLES_PATH,articles,sha,'刪除文章：'+(target?.title||id));
     await syncIndexFile(articles);
     // 同步刪除 GitHub 上的 HTML 檔
