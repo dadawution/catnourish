@@ -1609,6 +1609,16 @@ async function publishArticle(){
     const{html,slug}=await buildArticleHtml(articleData,tempArticles);
     articleData.slug=slug;
 
+    // 1.5. Slug duplicate check — new articles only, fetch fresh list before any write
+    if(!isEditing){
+      setSaveStatus('pubStatus','saving','⏳ 檢查 slug 是否重複...');
+      let checkResult;
+      try{checkResult=await getFile(ARTICLES_PATH);}catch(e){throw new Error('articles.json 取得失敗：'+e.message);}
+      if(checkResult.content.some(a=>a.slug===articleData.slug)){
+        throw new Error(`此網址（${articleData.slug}）已被使用，請更換不同的 slug 再發布`);
+      }
+    }
+
     // 2. Write HTML — fetch SHA immediately before write
     setSaveStatus('pubStatus','saving','⏳ 上傳文章頁面（articles/'+slug+'.html）...');
     const htmlPath='articles/'+slug+'.html';
