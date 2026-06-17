@@ -274,7 +274,7 @@
   {
     "id": 3,
     "slug": "cat-puree-type",
-    "title": "機能型肉泥和一般零食型肉泥有什麼不同？貓咪肉泥挑選前先看這幾點",
+    "title": "機能型肉泥和一般零食型肉泥有什麼不同？貓咪肉泥挑選方式",
     "excerpt": "貓肉泥不只是一種零食，也可能依照配方、成分與使用情境，分成日常獎勵型與機能補充型。選購時可從用途、原料、營養設計與餵食頻率判斷。",
     "cover": "https://res.cloudinary.com/dajib0ylm/image/upload/v1779086677/catnourish/lrinswvhdtk8uhoip42b.png",
     "coverAlt": "",
@@ -283,7 +283,10 @@
     "type": "知識型",
     "date": "2026-05-20",
     "hideDate": false,
-    "draft": false
+    "draft": false,
+    "authorName": "",
+    "authorTitle": "",
+    "authorAvatar": ""
   },
   {
     "id": 1779089198906,
