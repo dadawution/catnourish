@@ -333,7 +333,11 @@
     "tag": "飲食照護",
     "type": "問題型",
     "date": "2026-05-15",
-    "draft": false
+    "hideDate": false,
+    "draft": false,
+    "authorName": "",
+    "authorTitle": "",
+    "authorAvatar": ""
   },
   {
     "id": 1778656770323,
