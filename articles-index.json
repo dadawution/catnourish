@@ -367,6 +367,10 @@
     "tag": "飲食照護",
     "type": "問題型",
     "date": "2026-04-26",
-    "draft": false
+    "hideDate": false,
+    "draft": false,
+    "authorName": "",
+    "authorTitle": "",
+    "authorAvatar": ""
   }
 ]
