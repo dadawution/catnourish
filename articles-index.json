@@ -88,7 +88,7 @@
     "id": 1780743913164,
     "slug": "cat-change-food-methods",
     "title": "貓咪換食可以用肉泥輔助嗎？從乾糧、濕食到新主食的過渡方法",
-    "excerpt": "換食對貓咪來說是一件需要時間和耐心的事。這篇文章整理肉泥在換食過程中能扮演的角色、三種常見換食情境的實際做法，以及如何挑選適合換食期使用的肉泥，幫助飼主把換食成功率提高。",
+    "excerpt": "幫貓咪換食對主人來說是一件需要時間和耐心的事。這篇文章整理肉泥在換食過程中能扮演的角色、三種常見換食情境的實際做法，以及如何挑選適合換食期使用的肉泥，幫助飼主把換食成功率提高。",
     "cover": "https://res.cloudinary.com/dajib0ylm/image/upload/v1777297682/catnourish/tl7hueguwwnyj6ovrdha.png",
     "coverAlt": "",
     "emoji": "🍱",
@@ -350,7 +350,11 @@
     "tag": "飲食照護",
     "type": "問題型",
     "date": "2026-05-13",
-    "draft": false
+    "hideDate": false,
+    "draft": false,
+    "authorName": "",
+    "authorTitle": "",
+    "authorAvatar": ""
   },
   {
     "id": 1777196966672,
@@ -363,6 +367,10 @@
     "tag": "飲食照護",
     "type": "問題型",
     "date": "2026-04-26",
-    "draft": false
+    "hideDate": false,
+    "draft": false,
+    "authorName": "",
+    "authorTitle": "",
+    "authorAvatar": ""
   }
 ]
