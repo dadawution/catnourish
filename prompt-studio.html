@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>配圖 Prompt 工作室｜貓咪照護飲食誌</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1a1410;--ink-2:#3d3028;--muted:#8c7d70;--border:#e5ddd5;--cream:#faf8f4;--warm:#f2ece3;
+  --teal:#2d6e6e;--teal-light:#e8f2f2;--amber:#c47c2e;--amber-light:#fdf3e4;--sage:#5a7a5a;--sage-light:#eaf2ea;--red:#c44;--red-light:#fff0f0;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--cream);color:var(--ink);font-family:'Noto Sans TC',sans-serif;font-size:15px;line-height:1.7}
+button{font-family:inherit}
+
+/* NAV */
+.nav{background:var(--ink);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-logo{font-family:'Noto Serif TC',serif;font-size:.95rem;font-weight:700;color:white}
+.nav-logo span{color:#7ec8c8}
+.nav-right{display:flex;gap:8px;align-items:center}
+.nav-btn{background:rgba(255,255,255,.1);color:white;border:none;padding:7px 14px;border-radius:6px;font-size:.78rem;cursor:pointer}
+.nav-btn:hover{background:rgba(255,255,255,.2)}
+
+.wrap{max-width:1280px;margin:28px auto;padding:0 20px 80px}
+.page-title{font-family:'Noto Serif TC',serif;font-size:1.35rem;margin-bottom:6px}
+.page-sub{font-size:.82rem;color:var(--muted);margin-bottom:24px}
+
+/* 3-COLUMN LAYOUT */
+.cols{display:grid;grid-template-columns:290px minmax(0,1fr) 400px;gap:18px;align-items:start}
+.col-head{font-size:.72rem;font-weight:700;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.col-head .step{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--teal);color:white;font-size:.7rem;font-weight:700;letter-spacing:0}
+.card{background:white;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px}
+.card h3{font-family:'Noto Serif TC',serif;font-size:.95rem;margin-bottom:12px}
+
+/* SOURCE MODES */
+.mode-tabs{display:flex;flex-direction:column;gap:6px;margin-bottom:4px}
+.mode-tab{text-align:left;padding:10px 12px;border:1.5px solid var(--border);background:var(--cream);border-radius:8px;font-size:.85rem;cursor:pointer;color:var(--ink-2);transition:all .15s}
+.mode-tab:hover{border-color:var(--teal)}
+.mode-tab.active{border-color:var(--teal);background:var(--teal-light);color:var(--teal);font-weight:500}
+.src-panel{display:none;margin-top:14px}
+.src-panel.on{display:block}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.76rem;font-weight:500;color:var(--ink-2);margin-bottom:5px}
+.field input[type=text],.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;color:var(--ink);background:var(--cream);outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal);background:white}
+.field textarea{resize:vertical;line-height:1.6}
+.hint{font-size:.72rem;color:var(--muted);margin-top:4px;line-height:1.5}
+.hint.err{color:var(--red)}
+.btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-size:.83rem;font-weight:500;transition:all .2s}
+.btn-primary{background:var(--teal);color:white}
+.btn-primary:hover{background:#1f5555}
+.btn-ghost{background:var(--warm);color:var(--ink)}
+.btn-ghost:hover{background:#e8e0d5}
+.btn-sm{padding:5px 12px;font-size:.76rem;border-radius:6px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* SECTION LIST */
+.sec-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:320px;overflow-y:auto}
+.sec-item{text-align:left;padding:9px 12px;border:1px solid var(--border);background:white;border-radius:8px;font-size:.8rem;cursor:pointer;color:var(--ink-2);line-height:1.45}
+.sec-item:hover{border-color:var(--teal);background:var(--teal-light)}
+.sec-item.picked{border-color:var(--teal);background:var(--teal-light);color:var(--teal);font-weight:500}
+.sec-item .star{color:var(--amber);margin-right:4px}
+
+/* EMPTY-ALT SCANNER */
+.alt-item{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--cream)}
+.alt-item img{width:100%;max-height:150px;object-fit:cover;border-radius:6px;margin-bottom:8px;background:var(--warm)}
+.alt-item-url{font-size:.65rem;color:var(--muted);font-family:monospace;word-break:break-all;margin-bottom:8px;line-height:1.4}
+.alt-item input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;background:white;outline:none;margin-bottom:8px}
+.alt-item input:focus{border-color:var(--teal)}
+.alt-item-btns{display:flex;gap:6px;flex-wrap:wrap}
+.alt-ok{font-size:.72rem;color:var(--sage);background:var(--sage-light);border-radius:8px;padding:10px 12px;line-height:1.6}
+
+/* CHIPS */
+.chip-group{margin-bottom:16px}
+.chip-group>label{display:flex;align-items:baseline;gap:8px;font-size:.78rem;font-weight:600;color:var(--ink-2);margin-bottom:7px}
+.chip-group>label .en{font-size:.66rem;font-weight:400;color:var(--muted);letter-spacing:.05em}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:7px}
+.chip{padding:5px 12px;border:1px solid var(--border);background:white;border-radius:20px;font-size:.78rem;cursor:pointer;color:var(--ink-2);transition:all .12s;user-select:none}
+.chip:hover{border-color:var(--teal);color:var(--teal)}
+.chip.on{background:var(--teal);border-color:var(--teal);color:white}
+.chip.lib{border-style:dashed}
+.chip-free{width:100%;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:.8rem;font-family:inherit;background:var(--cream);outline:none}
+.chip-free:focus{border-color:var(--teal);background:white}
+.chip-free::placeholder{color:#c5bcb2}
+
+/* PRESET / SIZE segmented */
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg .chip{border-radius:8px}
+.seg .chip.on{background:var(--teal)}
+.seg.amber .chip.on{background:var(--amber);border-color:var(--amber)}
+
+/* OUTPUT */
+.out-block{margin-bottom:18px}
+.out-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.out-head label{font-size:.78rem;font-weight:600;color:var(--ink-2)}
+.out-box{background:var(--warm);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.8rem;line-height:1.75;color:var(--ink-2);white-space:pre-wrap;word-break:break-word;max-height:300px;overflow-y:auto}
+.out-box.en{font-family:'SF Mono','Menlo',monospace;font-size:.74rem}
+.out-box .layer{display:block;padding:2px 0}
+.out-box .layer.fixed{color:var(--muted)}
+textarea.out-edit{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;line-height:1.7;background:white;outline:none;resize:vertical;min-height:64px}
+textarea.out-edit:focus{border-color:var(--teal)}
+.size-note{font-size:.74rem;color:var(--amber);background:var(--amber-light);border-radius:8px;padding:9px 12px;line-height:1.6;margin-bottom:16px}
+.variant-row{display:flex;gap:8px;margin-bottom:16px}
+.copy-row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:24px}
+.overlay.on{display:flex}
+.modal{background:white;border-radius:16px;width:100%;max-width:640px;max-height:86vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-head{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-family:'Noto Serif TC',serif;font-size:1rem}
+.modal-close{background:none;border:none;font-size:1.15rem;cursor:pointer;color:var(--muted);padding:4px}
+.modal-body{padding:20px 24px;overflow-y:auto}
+.modal-foot{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+/* HISTORY */
+.hist-item{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--cream)}
+.hist-meta{font-size:.68rem;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;gap:10px}
+.hist-prompt{font-size:.72rem;font-family:monospace;color:var(--ink-2);line-height:1.5;max-height:60px;overflow:hidden;margin-bottom:4px}
+.hist-alt{font-size:.76rem;color:var(--teal);margin-bottom:8px}
+.hist-btns{display:flex;gap:6px}
+.empty{text-align:center;padding:36px 12px;color:var(--muted);font-size:.82rem}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--sage);color:white;padding:12px 20px;border-radius:8px;font-size:.85rem;transform:translateY(80px);opacity:0;transition:all .3s;z-index:999}
+.toast.show{transform:translateY(0);opacity:1}
+
+@media(max-width:1080px){.cols{grid-template-columns:1fr 1fr}.col-src{grid-column:1/-1}}
+@media(max-width:720px){.cols{grid-template-columns:1fr}.wrap{margin-top:18px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">貓咪照護飲食誌 <span>配圖 Prompt 工作室</span></div>
+  <div class="nav-right">
+    <button class="nav-btn" onclick="openHistory()">🕘 歷史紀錄</button>
+    <button class="nav-btn" onclick="openSettings()">⚙️ 風格設定</button>
+    <button class="nav-btn" onclick="window.open('admin.html','_blank')">後台 ↗</button>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="page-title">🎨 配圖 Prompt 工作室</div>
+  <div class="page-sub">組好畫面 → 複製 prompt 貼到 GPT 生圖 → 圖上傳圖庫 → alt 一併帶走。自由輸入可打中文，GPT 看得懂。</div>
+
+  <div class="cols">
+
+    <!-- ① SOURCE -->
+    <div class="col-src">
+      <div class="col-head"><span class="step">1</span>來源</div>
+      <div class="card">
+        <div class="mode-tabs">
+          <button class="mode-tab active" id="modeTab-manual" onclick="setMode('manual')">✏️ 手動描述<br><span style="font-size:.7rem;color:var(--muted);font-weight:400">自由發想，不綁文章</span></button>
+          <button class="mode-tab" id="modeTab-article" onclick="setMode('article')">📄 從站上選文章<br><span style="font-size:.7rem;color:var(--muted);font-weight:400">段落配圖／補空白 alt</span></button>
+          <button class="mode-tab" id="modeTab-paste" onclick="setMode('paste')">📋 貼上內文<br><span style="font-size:.7rem;color:var(--muted);font-weight:400">草稿還沒發布時用</span></button>
+        </div>
+
+        <!-- manual -->
+        <div class="src-panel on" id="src-manual">
+          <div class="hint">直接到中欄組裝畫面即可。若想讓 alt 帶到文章關鍵字，可在下方填主題脈絡。</div>
+        </div>
+
+        <!-- article -->
+        <div class="src-panel" id="src-article">
+          <div class="field">
+            <label>選擇文章</label>
+            <select id="artSelect" onchange="loadArticle()"><option value="">— 載入中… —</option></select>
+            <div class="hint" id="artHint"></div>
+          </div>
+          <div id="artTools" style="display:none">
+            <div class="seg" style="margin-bottom:12px">
+              <button class="chip on" id="subTab-sec" onclick="setArtSub('sec')">段落配圖</button>
+              <button class="chip" id="subTab-alt" onclick="setArtSub('alt')">補空白 alt</button>
+            </div>
+            <div id="artSub-sec">
+              <div class="hint" style="margin-bottom:6px">點一個段落，標題會帶入「主題脈絡」。</div>
+              <div class="sec-list" id="secList"></div>
+            </div>
+            <div id="artSub-alt" style="display:none">
+              <div id="altList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- paste -->
+        <div class="src-panel" id="src-paste">
+          <div class="field">
+            <label>貼上文章內文（後台標記語法）</label>
+            <textarea id="pasteBody" style="min-height:140px" placeholder="## ★ 段落標題&#10;內文…&#10;![](https://res.cloudinary.com/...)"></textarea>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="parsePasted()">解析段落與空白 alt</button>
+          <div id="pasteTools" style="display:none;margin-top:12px">
+            <div class="seg" style="margin-bottom:12px">
+              <button class="chip on" id="psubTab-sec" onclick="setPasteSub('sec')">段落</button>
+              <button class="chip" id="psubTab-alt" onclick="setPasteSub('alt')">空白 alt</button>
+            </div>
+            <div id="pasteSub-sec"><div class="sec-list" id="pSecList"></div></div>
+            <div id="pasteSub-alt" style="display:none"><div id="pAltList"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field" style="margin-bottom:0">
+          <label>主題脈絡（帶入 prompt 與 alt）</label>
+          <input type="text" id="topicCtx" placeholder="例如：老貓補水" oninput="rebuild()">
+        </div>
+      </div>
+    </div>
+
+    <!-- ② ASSEMBLY -->
+    <div>
+      <div class="col-head"><span class="step">2</span>畫面組裝</div>
+      <div class="card">
+        <div class="chip-group">
+          <label>情境預設 <span class="en">依文章類型</span></label>
+          <div class="seg amber" id="grp-preset"></div>
+        </div>
+        <div class="chip-group">
+          <label>主體 <span class="en">SUBJECT</span></label>
+          <div class="chips" id="grp-subject"></div>
+          <input class="chip-free" id="free-subject" placeholder="自由補充，例如：一隻毛色偏淡的老橘貓" oninput="rebuild()">
+        </div>
+        <div class="chip-group">
+          <label>動作／狀態 <span class="en">ACTION</span></label>
+          <div class="chips" id="grp-action"></div>
+          <input class="chip-free" id="free-action" placeholder="自由補充，例如：盯著沒動過的食碗" oninput="rebuild()">
+        </div>
+        <div class="chip-group">
+          <label>場景 <span class="en">SCENE</span></label>
+          <div class="chips" id="grp-scene"></div>
+          <input class="chip-free" id="free-scene" placeholder="自由補充" oninput="rebuild()">
+        </div>
+        <div class="chip-group">
+          <label>道具／食物 <span class="en">PROPS</span></label>
+          <div class="chips" id="grp-props"></div>
+          <input class="chip-free" id="free-props" placeholder="自由補充，例如：分裝好的一週餵食盒" oninput="rebuild()">
+        </div>
+        <div class="chip-group">
+          <label>光線 <span class="en">LIGHT</span></label>
+          <div class="chips" id="grp-light"></div>
+        </div>
+        <div class="chip-group">
+          <label>構圖 <span class="en">COMPOSITION</span>　<button class="btn btn-ghost btn-sm" onclick="nextVariant()">🔀 換個變體</button></label>
+          <div class="seg" id="grp-comp"></div>
+        </div>
+        <div class="chip-group" style="margin-bottom:6px">
+          <label>尺寸用途 <span class="en">SIZE</span></label>
+          <div class="seg" id="grp-size"></div>
+        </div>
+        <div id="coverReminderWrap" style="display:none;margin-top:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>封面 alt 照護提醒（選填，混合式）</label>
+            <input type="text" id="coverReminder" placeholder="例如：飼主須留意每日飲水量" oninput="rebuild()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ OUTPUT -->
+    <div>
+      <div class="col-head"><span class="step">3</span>輸出</div>
+      <div class="card">
+        <div class="size-note" id="sizeNote"></div>
+
+        <div class="out-block">
+          <div class="out-head">
+            <label>GPT 生圖 Prompt（敘述式）</label>
+            <button class="btn btn-primary btn-sm" onclick="copyPrompt()">📋 複製 Prompt</button>
+          </div>
+          <div class="out-box en" id="outPrompt"></div>
+        </div>
+
+        <div class="out-block">
+          <div class="out-head">
+            <label>SEO alt（繁中，可直接改）</label>
+            <button class="btn btn-primary btn-sm" onclick="copyText(altBox().value,'alt')">📋 複製 alt</button>
+          </div>
+          <textarea class="out-edit" id="outAlt" oninput="markAltEdited();buildSkeleton()"></textarea>
+        </div>
+
+        <div class="out-block">
+          <div class="out-head">
+            <label>內文插入骨架</label>
+            <button class="btn btn-ghost btn-sm" onclick="copyText(document.getElementById('outSkeleton').textContent,'骨架')">📋 複製</button>
+          </div>
+          <div class="out-box en" id="outSkeleton"></div>
+          <div class="hint">生圖上傳圖庫後，把 Cloudinary 網址貼進括號即可。</div>
+        </div>
+
+        <div class="out-block" style="margin-bottom:0">
+          <div class="out-head">
+            <label>上傳檔名建議</label>
+            <button class="btn btn-ghost btn-sm" onclick="copyText(document.getElementById('outFname').textContent,'檔名')">📋 複製</button>
+          </div>
+          <div class="out-box en" id="outFname"></div>
+        </div>
+      </div>
+      <div class="hint" style="padding:0 4px">每次複製 Prompt 會自動存進歷史紀錄（最多 30 筆）。</div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-head"><h3>⚙️ 風格設定</h3><button class="modal-close" onclick="closeSettings()">✕</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>站風格層（固定拼在每個 prompt 尾端）</label>
+        <textarea id="styleText" style="min-height:110px"></textarea>
+      </div>
+      <div class="field">
+        <label>Avoid 清單（合規護欄，固定拼接）</label>
+        <textarea id="avoidText" style="min-height:110px"></textarea>
+        <div class="hint">預設涵蓋：畫面無文字／浮水印／可讀品牌標示、無受苦或臨床動物、無醫療場景、人只出現手部。</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="resetStyle()">還原預設</button>
+      <button class="btn btn-primary" onclick="saveStyle()">儲存設定</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="overlay" id="historyModal">
+  <div class="modal">
+    <div class="modal-head"><h3>🕘 歷史紀錄</h3><button class="modal-close" onclick="closeHistory()">✕</button></div>
+    <div class="modal-body" id="histBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="clearHistory()">清空全部</button>
+      <button class="btn btn-primary" onclick="closeHistory()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ═══════════ DATA ═══════════ */
+const LS = { style:'ps_style', avoid:'ps_avoid', hist:'ps_history' };
+
+const DEFAULT_STYLE = 'Warm editorial magazine photography style. Natural soft daylight, realistic but clean, Taiwanese home interior setting with warm off-white and cream tones. Shallow depth of field, gentle and calm mood, like a lifestyle magazine feature about cat care.';
+const DEFAULT_AVOID = 'No text, no watermark, no logo, no brand packaging with readable claims or labels. No distressed, sick-looking, or frightened animals. No medical or clinical settings, no syringes or medication close-ups. No human faces in focus (hands only if needed).';
+
+/* Bilingual chips — zh feeds the alt template, en feeds the prompt */
+const CHIPS = {
+  subject: [
+    {zh:'虎斑貓', en:'a tabby cat'},
+    {zh:'橘貓', en:'an orange tabby cat'},
+    {zh:'賓士貓', en:'a tuxedo cat'},
+    {zh:'黑貓', en:'a black cat'},
+    {zh:'幼貓', en:'a small kitten'},
+    {zh:'老貓', en:'a calm senior cat with soft graying fur'},
+    {zh:'兩隻貓', en:'two cats together'}
+  ],
+  action: [
+    {zh:'進食', en:'eating from a ceramic bowl'},
+    {zh:'喝水', en:'drinking water from a bowl'},
+    {zh:'睡覺', en:'sleeping curled up peacefully'},
+    {zh:'玩耍', en:'playing gently'},
+    {zh:'安穩坐著', en:'sitting calmly'},
+    {zh:'好奇觀望', en:'looking on curiously'},
+    {zh:'被餵食', en:'being hand-fed by its owner'},
+    {zh:'食慾不佳', en:'sitting beside an untouched food bowl, looking uninterested'}
+  ],
+  scene: [
+    {zh:'客廳', en:'in a cozy living room'},
+    {zh:'廚房一角', en:'in a warm kitchen corner'},
+    {zh:'窗邊', en:'by a sunny window'},
+    {zh:'木質餐桌上', en:'on a warm wooden dining table'},
+    {zh:'貓跳台旁', en:'near a cat tree'}
+  ],
+  props: [
+    {zh:'肉泥', en:'an unbranded cat puree tube'},
+    {zh:'濕食罐頭', en:'an unbranded can of wet cat food'},
+    {zh:'乾糧', en:'a small bowl of dry kibble'},
+    {zh:'水碗', en:'a ceramic water bowl'},
+    {zh:'保健粉包', en:'a small unbranded supplement powder sachet'},
+    {zh:'新鮮食材', en:'fresh whole-food ingredients arranged nearby'},
+    {zh:'飼主的手', en:"the owner's hands gently in frame"}
+  ],
+  light: [
+    {zh:'自然日光', en:'Soft natural daylight'},
+    {zh:'清晨光線', en:'Gentle morning light'},
+    {zh:'午後暖光', en:'Warm afternoon light'},
+    {zh:'陰天柔光', en:'Diffused overcast light'}
+  ]
+};
+
+const PRESETS = [
+  {zh:'問題型', en:'The cat visibly shows the concern described, observed from a caring owner\u2019s point of view, documentary yet gentle feel.'},
+  {zh:'知識型', en:'Clean explanatory composition, neatly arranged, like an educational magazine feature.'},
+  {zh:'解決方案型', en:'A step-by-step action moment, hands demonstrating the method clearly.'},
+  {zh:'品牌觀點', en:'Any product appears unbranded or with packaging turned away, no readable labels.'}
+];
+
+const COMPS = [
+  {zh:'特寫', en:'Close-up shot with shallow depth of field, focused on the subject.'},
+  {zh:'環境鏡頭', en:'Environmental wide shot showing the room context around the subject.'},
+  {zh:'平拍', en:'Overhead flat-lay composition, items arranged neatly from above.'}
+];
+
+const SIZES = [
+  {zh:'封面 / OG（橫幅）', gpt:'1536×1024', en:'Wide horizontal composition with visual breathing space at the sides.', note:'到 GPT 生圖時選 1536×1024（橫式）。此圖也會被裁成 OG 1200×630，主體請置中。', cover:true},
+  {zh:'內文 figure（橫幅）', gpt:'1536×1024', en:'Balanced horizontal composition.', note:'到 GPT 生圖時選 1536×1024（橫式）。前台縮圖為 4:3 裁切，主體避免貼邊。', cover:false},
+  {zh:'方形 / 頭像', gpt:'1024×1024', en:'Centered subject, square framing.', note:'到 GPT 生圖時選 1024×1024（方形）。', cover:false}
+];
+
+/* ═══════════ STATE ═══════════ */
+const state = {
+  mode:'manual',
+  preset:-1, comp:0, size:1,
+  sel:{subject:new Set(), action:new Set(), scene:new Set(), props:new Set(), light:new Set()},
+  articlesIndex:[], articlesFull:null, currentArt:null,
+  slug:'', altEdited:false
+};
+
+/* ═══════════ INIT ═══════════ */
+function renderChips(group, list, single){
+  const el = document.getElementById('grp-'+group);
+  el.innerHTML = list.map((c,i)=>`<button class="chip${c.lib?' lib':''}" data-i="${i}" onclick="toggleChip('${group}',${i},${single?1:0})">${c.zh}</button>`).join('');
+}
+function toggleChip(group,i,single){
+  if(group==='preset'){ state.preset = (state.preset===i? -1 : i); paintSeg('preset',PRESETS,state.preset); rebuild(); return; }
+  if(group==='comp'){ state.comp=i; paintSeg('comp',COMPS,state.comp); rebuild(); return; }
+  if(group==='size'){ state.size=i; paintSeg('size',SIZES,state.size); onSizeChange(); rebuild(); return; }
+  const set = state.sel[group];
+  if(single){ set.clear(); set.add(i); }
+  else { set.has(i) ? set.delete(i) : set.add(i); }
+  document.querySelectorAll(`#grp-${group} .chip`).forEach((b,bi)=>b.classList.toggle('on',set.has(bi)));
+  rebuild();
+}
+function paintSeg(group,list,active){
+  document.querySelectorAll(`#grp-${group} .chip`).forEach((b,bi)=>b.classList.toggle('on',bi===active));
+}
+function onSizeChange(){
+  document.getElementById('coverReminderWrap').style.display = SIZES[state.size].cover ? 'block' : 'none';
+}
+
+function init(){
+  renderChips('subject',CHIPS.subject); renderChips('action',CHIPS.action);
+  renderChips('scene',CHIPS.scene); renderChips('props',CHIPS.props);
+  document.getElementById('grp-light').innerHTML = CHIPS.light.map((c,i)=>`<button class="chip" onclick="toggleChip('light',${i},1)">${c.zh}</button>`).join('');
+  document.getElementById('grp-preset').innerHTML = PRESETS.map((c,i)=>`<button class="chip" onclick="toggleChip('preset',${i})">${c.zh}</button>`).join('');
+  document.getElementById('grp-comp').innerHTML = COMPS.map((c,i)=>`<button class="chip" onclick="toggleChip('comp',${i})">${c.zh}</button>`).join('');
+  document.getElementById('grp-size').innerHTML = SIZES.map((c,i)=>`<button class="chip" onclick="toggleChip('size',${i})">${c.zh}</button>`).join('');
+  paintSeg('comp',COMPS,0); paintSeg('size',SIZES,1);
+  loadIndex(); loadLibraryTags();
+  rebuild();
+}
+
+/* ═══════════ DATA FETCH ═══════════ */
+async function loadIndex(){
+  const sel=document.getElementById('artSelect'), hint=document.getElementById('artHint');
+  try{
+    const res = await fetch('./articles-index.json',{cache:'no-store'});
+    if(!res.ok) throw new Error(res.status);
+    state.articlesIndex = await res.json();
+    const pub = state.articlesIndex.filter(a=>!a.draft);
+    sel.innerHTML = '<option value="">— 選擇文章 —</option>' + pub.map(a=>`<option value="${a.slug}">${a.title}</option>`).join('');
+    hint.textContent = `已載入 ${pub.length} 篇已發布文章`;
+  }catch(e){
+    sel.innerHTML = '<option value="">（無法載入）</option>';
+    hint.className='hint err';
+    hint.textContent = '讀不到 articles-index.json。本工具需放在 catcare.tw 網域下（repo 根目錄）才能自動載入；或改用「貼上內文」模式。';
+  }
+}
+async function loadLibraryTags(){
+  try{
+    const res = await fetch('./photos.json',{cache:'no-store'});
+    if(!res.ok) return;
+    const photos = await res.json();
+    const count = {};
+    photos.forEach(p=>(p.tags||[]).forEach(t=>count[t]=(count[t]||0)+1));
+    const existingZh = new Set(Object.values(CHIPS).flat().map(c=>c.zh));
+    const top = Object.entries(count).sort((a,b)=>b[1]-a[1]).map(([t])=>t)
+      .filter(t=>!existingZh.has(t) && t.length<=6).slice(0,8);
+    if(!top.length) return;
+    /* library tags join the scene/props pool as dashed chips; zh goes into both prompt and alt */
+    top.forEach(t=>CHIPS.props.push({zh:t, en:t, lib:true}));
+    renderChips('props',CHIPS.props);
+  }catch(e){}
+}
+async function loadArticle(){
+  const slug = document.getElementById('artSelect').value;
+  const tools = document.getElementById('artTools');
+  if(!slug){ tools.style.display='none'; state.currentArt=null; state.slug=''; rebuild(); return; }
+  try{
+    if(!state.articlesFull){
+      showToast('⏳ 載入文章內容…');
+      const res = await fetch('./articles.json',{cache:'no-store'});
+      if(!res.ok) throw new Error(res.status);
+      state.articlesFull = await res.json();
+    }
+    const art = state.articlesFull.find(a=>a.slug===slug);
+    if(!art){ showToast('找不到這篇文章的內文'); return; }
+    state.currentArt = art; state.slug = slug;
+    renderSections(art.body||'', 'secList', true);
+    renderAltScanner(art.body||'', 'altList');
+    tools.style.display='block';
+    document.getElementById('topicCtx').value = art.title || '';
+    rebuild();
+  }catch(e){ showToast('❌ 載入失敗：'+e.message); }
+}
+
+/* ═══════════ PARSERS ═══════════ */
+function extractSections(body){
+  const out=[];
+  body.split('\n').forEach(l=>{
+    const m=l.match(/^## (★\s*)?(.+)$/);
+    if(m) out.push({star:!!m[1], title:m[2].trim()});
+  });
+  return out;
+}
+function extractEmptyAltImgs(body){
+  const out=[]; const re=/!\[\]\(([^)]+)\)/g; let m;
+  while((m=re.exec(body))!==null) out.push(m[1]);
+  return out;
+}
+function thumb(url){
+  const m = url.match(/^(https?:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/)(.+)$/);
+  if(!m) return url;
+  const first = m[2].split('/')[0];
+  return /^v\d+$/.test(first) ? m[1]+'c_limit,w_400,f_auto,q_auto/'+m[2] : url;
+}
+function renderSections(body, targetId, fromArticle){
+  const secs = extractSections(body);
+  const el = document.getElementById(targetId);
+  if(!secs.length){ el.innerHTML='<div class="empty">沒有偵測到 H2 段落</div>'; return; }
+  el.innerHTML = secs.map((s,i)=>`<button class="sec-item" onclick="pickSection(this,'${encodeURIComponent(s.title)}')">${s.star?'<span class="star">★</span>':''}${s.title}</button>`).join('');
+}
+function pickSection(btn, encTitle){
+  document.querySelectorAll('.sec-item').forEach(b=>b.classList.remove('picked'));
+  btn.classList.add('picked');
+  document.getElementById('topicCtx').value = decodeURIComponent(encTitle);
+  state.altEdited=false;
+  rebuild();
+  showToast('✅ 已帶入主題脈絡');
+}
+function renderAltScanner(body, targetId){
+  const urls = extractEmptyAltImgs(body);
+  const el = document.getElementById(targetId);
+  if(!urls.length){ el.innerHTML='<div class="alt-ok">✅ 這篇沒有空白 alt 的圖片，很乾淨。</div>'; return; }
+  el.innerHTML = `<div class="hint" style="margin-bottom:10px">發現 <b>${urls.length}</b> 張 alt 空白的圖。填好描述後複製整段，回後台編輯器取代原本的 <code>![]()</code>。</div>`
+    + urls.map((u,i)=>`
+    <div class="alt-item">
+      <img src="${thumb(u)}" alt="" loading="lazy">
+      <div class="alt-item-url">${u}</div>
+      <input type="text" id="altFix-${targetId}-${i}" placeholder="輸入這張圖的 alt 描述…">
+      <div class="alt-item-btns">
+        <button class="btn btn-ghost btn-sm" onclick="fillAltFromAssembly('${targetId}',${i})">以目前組裝內容產生</button>
+        <button class="btn btn-primary btn-sm" onclick="copyAltFix('${targetId}',${i},'${encodeURIComponent(u)}')">📋 複製 ![alt](url)</button>
+      </div>
+    </div>`).join('');
+}
+function fillAltFromAssembly(t,i){
+  document.getElementById(`altFix-${t}-${i}`).value = buildAlt(false);
+  showToast('✅ 已填入，可再手改');
+}
+function copyAltFix(t,i,encUrl){
+  const alt = document.getElementById(`altFix-${t}-${i}`).value.trim();
+  if(!alt){ showToast('請先填 alt 描述'); return; }
+  copyText(`![${alt}](${decodeURIComponent(encUrl)})`, 'alt 圖片標記');
+}
+
+/* paste mode */
+function parsePasted(){
+  const body = document.getElementById('pasteBody').value;
+  if(!body.trim()){ showToast('請先貼上內文'); return; }
+  renderSections(body,'pSecList',false);
+  renderAltScanner(body,'pAltList');
+  document.getElementById('pasteTools').style.display='block';
+}
+
+/* ═══════════ MODE SWITCHING ═══════════ */
+function setMode(m){
+  state.mode=m;
+  ['manual','article','paste'].forEach(x=>{
+    document.getElementById('modeTab-'+x).classList.toggle('active',x===m);
+    document.getElementById('src-'+x).classList.toggle('on',x===m);
+  });
+}
+function setArtSub(s){
+  document.getElementById('subTab-sec').classList.toggle('on',s==='sec');
+  document.getElementById('subTab-alt').classList.toggle('on',s==='alt');
+  document.getElementById('artSub-sec').style.display = s==='sec'?'block':'none';
+  document.getElementById('artSub-alt').style.display = s==='alt'?'block':'none';
+}
+function setPasteSub(s){
+  document.getElementById('psubTab-sec').classList.toggle('on',s==='sec');
+  document.getElementById('psubTab-alt').classList.toggle('on',s==='alt');
+  document.getElementById('pasteSub-sec').style.display = s==='sec'?'block':'none';
+  document.getElementById('pasteSub-alt').style.display = s==='alt'?'block':'none';
+}
+
+/* ═══════════ PROMPT / ALT ASSEMBLY ═══════════ */
+function picked(group){ return [...state.sel[group]].map(i=>CHIPS[group][i]); }
+function freeVal(group){ return document.getElementById('free-'+group)?.value.trim()||''; }
+
+function buildPrompt(){
+  const subj = picked('subject').map(c=>c.en); const fs=freeVal('subject'); if(fs)subj.push(fs);
+  const act  = picked('action').map(c=>c.en);  const fa=freeVal('action');  if(fa)act.push(fa);
+  const scn  = picked('scene').map(c=>c.en);   const fc=freeVal('scene');   if(fc)scn.push(fc);
+  const prp  = picked('props').map(c=>c.en);   const fp=freeVal('props');   if(fp)prp.push(fp);
+  const lit  = picked('light').map(c=>c.en);
+  const topic = document.getElementById('topicCtx').value.trim();
+
+  const parts=[];
+  let main = 'A photograph of ' + (subj.length? subj.join(' and ') : 'a cat');
+  if(act.length) main += ', ' + act.join(', ');
+  if(scn.length) main += ', ' + scn.join(', ');
+  if(prp.length) main += ', with ' + prp.join(', ');
+  parts.push({t:main+'.', fixed:false});
+  if(lit.length) parts.push({t:lit.join('. ')+'.', fixed:false});
+  parts.push({t:COMPS[state.comp].en, fixed:false});
+  if(state.preset>=0) parts.push({t:PRESETS[state.preset].en, fixed:false});
+  parts.push({t:SIZES[state.size].en, fixed:false});
+  if(topic) parts.push({t:'This image illustrates an article about: '+topic+'.', fixed:false});
+  parts.push({t:(localStorage.getItem(LS.style)||DEFAULT_STYLE), fixed:true});
+  parts.push({t:(localStorage.getItem(LS.avoid)||DEFAULT_AVOID), fixed:true});
+  return parts;
+}
+function buildAlt(coverMode){
+  const subjZh = picked('subject').map(c=>c.zh);
+  const actZh  = picked('action').map(c=>c.zh);
+  const scnZh  = picked('scene').map(c=>c.zh);
+  const prpZh  = picked('props').map(c=>c.zh);
+  const topic  = document.getElementById('topicCtx').value.trim();
+  const fs=freeVal('subject'), fa=freeVal('action'), fc=freeVal('scene');
+
+  let s = '';
+  const subject = fs || subjZh.join('與') || '貓咪';
+  s += subject;
+  const scene = fc || scnZh[0] || '';
+  if(scene) s += '在' + scene;
+  const action = fa || actZh.join('、');
+  if(action) s += action;
+  if(prpZh.length) s += '，一旁是' + prpZh.slice(0,2).join('與');
+  if(topic) s += '，呈現' + topic + '的日常情境';
+  const isCover = coverMode===undefined ? SIZES[state.size].cover : coverMode;
+  if(isCover){
+    const rem = document.getElementById('coverReminder').value.trim();
+    if(rem) s += '，' + rem;
+  }
+  return s;
+}
+function slugFrag(){
+  const topic = document.getElementById('topicCtx').value.trim();
+  const compKey = ['closeup','wide','flatlay'][state.comp];
+  const base = state.slug || 'catcare';
+  return `${base}-${compKey}` + (topic? '' : '') ;
+}
+function altBox(){ return document.getElementById('outAlt'); }
+function markAltEdited(){ state.altEdited=true; }
+
+function rebuild(){
+  /* prompt */
+  const parts = buildPrompt();
+  document.getElementById('outPrompt').innerHTML = parts.map(p=>`<span class="layer${p.fixed?' fixed':''}">${escapeHtml(p.t)}</span>`).join('');
+  /* alt — don't clobber manual edits unless inputs changed via chips (simple rule: overwrite only when not edited) */
+  if(!state.altEdited) altBox().value = buildAlt();
+  buildSkeleton();
+  /* size note */
+  document.getElementById('sizeNote').textContent = '📐 ' + SIZES[state.size].note;
+  /* filename */
+  document.getElementById('outFname').textContent = slugFrag() + '-' + String(Date.now()).slice(-5) + '.png';
+}
+function buildSkeleton(){
+  document.getElementById('outSkeleton').textContent = `![${altBox().value.trim()}](這裡貼上傳後的Cloudinary網址)`;
+}
+function nextVariant(){
+  state.comp = (state.comp+1) % COMPS.length;
+  paintSeg('comp',COMPS,state.comp);
+  rebuild();
+  showToast('🔀 已切換為「'+COMPS[state.comp].zh+'」構圖');
+}
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ═══════════ COPY + HISTORY ═══════════ */
+function promptPlain(){ return buildPrompt().map(p=>p.t).join(' '); }
+function copyPrompt(){
+  const text = promptPlain();
+  navigator.clipboard.writeText(text).then(()=>{
+    showToast('✅ Prompt 已複製！貼到 GPT 生圖即可');
+    pushHistory(text, altBox().value.trim());
+  }).catch(()=>showToast('❌ 複製失敗，請手動選取'));
+}
+function copyText(text, label){
+  if(!text||!text.trim()){ showToast('沒有內容可複製'); return; }
+  navigator.clipboard.writeText(text).then(()=>showToast('✅ '+label+' 已複製')).catch(()=>showToast('❌ 複製失敗'));
+}
+function getHistory(){ try{ return JSON.parse(localStorage.getItem(LS.hist)||'[]'); }catch(e){ return []; } }
+function pushHistory(prompt, alt){
+  const h = getHistory();
+  h.unshift({ ts:new Date().toLocaleString('zh-TW'), slug:state.slug||'', topic:document.getElementById('topicCtx').value.trim(), prompt, alt });
+  localStorage.setItem(LS.hist, JSON.stringify(h.slice(0,30)));
+}
+function openHistory(){
+  const h = getHistory();
+  const el = document.getElementById('histBody');
+  el.innerHTML = h.length ? h.map((x,i)=>`
+    <div class="hist-item">
+      <div class="hist-meta"><span>${x.ts}${x.slug?'　·　'+x.slug:''}</span><span>${x.topic||''}</span></div>
+      <div class="hist-prompt">${escapeHtml(x.prompt)}</div>
+      ${x.alt?`<div class="hist-alt">alt：${escapeHtml(x.alt)}</div>`:''}
+      <div class="hist-btns">
+        <button class="btn btn-primary btn-sm" onclick="copyText(getHistory()[${i}].prompt,'Prompt')">📋 Prompt</button>
+        ${x.alt?`<button class="btn btn-ghost btn-sm" onclick="copyText(getHistory()[${i}].alt,'alt')">📋 alt</button>`:''}
+      </div>
+    </div>`).join('') : '<div class="empty">還沒有紀錄。複製一次 Prompt 就會出現在這裡。</div>';
+  document.getElementById('historyModal').classList.add('on');
+}
+function closeHistory(){ document.getElementById('historyModal').classList.remove('on'); }
+function clearHistory(){ localStorage.removeItem(LS.hist); openHistory(); showToast('已清空歷史'); }
+
+/* ═══════════ SETTINGS ═══════════ */
+function openSettings(){
+  document.getElementById('styleText').value = localStorage.getItem(LS.style)||DEFAULT_STYLE;
+  document.getElementById('avoidText').value = localStorage.getItem(LS.avoid)||DEFAULT_AVOID;
+  document.getElementById('settingsModal').classList.add('on');
+}
+function closeSettings(){ document.getElementById('settingsModal').classList.remove('on'); }
+function saveStyle(){
+  localStorage.setItem(LS.style, document.getElementById('styleText').value.trim()||DEFAULT_STYLE);
+  localStorage.setItem(LS.avoid, document.getElementById('avoidText').value.trim()||DEFAULT_AVOID);
+  closeSettings(); rebuild(); showToast('✅ 風格設定已儲存');
+}
+function resetStyle(){
+  document.getElementById('styleText').value = DEFAULT_STYLE;
+  document.getElementById('avoidText').value = DEFAULT_AVOID;
+  showToast('已還原預設（尚未儲存）');
+}
+
+/* ═══════════ MISC ═══════════ */
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2800); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('on'); }));
+
+/* subject/action free inputs also reset altEdited so alt refreshes */
+['free-subject','free-action','free-scene','free-props','topicCtx','coverReminder'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{ state.altEdited=false; });
+});
+
+init();
+</script>
+</body>
+</html>
