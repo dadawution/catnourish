@@ -400,7 +400,8 @@
             <button class="btn-pick" onclick="openPicker('aCover')">📷 從圖庫選</button>
           </div>
         </div>
-        <div class="form-group"><label>封面圖片說明（alt，有助 SEO）</label><input type="text" id="aCoverAlt" placeholder="描述圖片內容，例如：老貓躺在陽光下休息"></div>
+        <div class="form-group"><label>封面圖片說明（alt，有助 SEO，前台不顯示）</label><input type="text" id="aCoverAlt" placeholder="描述圖片內容，例如：老貓躺在陽光下休息"></div>
+        <div class="form-group"><label>封面圖說（選填，會顯示在封面下方）</label><input type="text" id="aCoverCaption" placeholder="留空則封面下方不顯示文字"></div>
         <div class="form-group"><label>文章 Emoji（無封面圖時顯示）</label><input type="text" id="aEmoji" placeholder="🐱" style="width:80px"></div>
         <div class="form-group">
           <label class="editor-label">文章內容</label>
@@ -771,7 +772,8 @@
 <div class="caption-modal-overlay" id="captionModal">
   <div class="caption-modal-box">
     <h4>📷 設定圖片說明</h4>
-    <input type="text" id="captionInput" placeholder="圖說文字（可留空）">
+    <input type="text" id="captionInput" placeholder="alt 描述（給 SEO / AI，前台不顯示）">
+    <input type="text" id="captionVisibleInput" placeholder="圖說（選填，會顯示在圖片下方）">
     <div class="caption-btn-row">
       <button class="btn-caption-cancel" onclick="closeCaptionModal()">取消</button>
       <button class="btn-caption-ok" onclick="insertImageToBody()">插入圖片</button>
@@ -1418,7 +1420,8 @@ function optimizeCloudinaryUrl(url) {
 
 function renderBodyHtml(body){
   let i=0;
-  const imgRe=/^!\[([^\]]*)\]\(([^)]+)\)$/;
+  // ![alt](url) → alt 僅寫入 img alt（隱藏）；![alt](url "圖說") → 圖說才顯示 figcaption
+  const imgRe=/^!\[([^\]]*)\]\(\s*(\S+?)(?:\s+"([^"]*)")?\s*\)$/;
   function renderInline(text){
     let r=text.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
     r=r.replace(/\*([^*\n]+)\*/g,'<em>$1</em>');
@@ -1441,7 +1444,7 @@ function renderBodyHtml(body){
     if(line.startsWith('- '))return`<li>${renderInline(line.slice(2))}</li>`;
     if(line.trim()==='---')return'<hr>';
     const m=line.match(imgRe);
-    if(m)return`<figure><img src="${optimizeCloudinaryUrl(m[2])}" alt="${m[1]}" loading="lazy">${m[1]?`<figcaption>${m[1]}</figcaption>`:''}</figure>`;
+    if(m)return`<figure><img src="${optimizeCloudinaryUrl(m[2])}" alt="${m[1]}" loading="lazy">${m[3]?`<figcaption>${m[3]}</figcaption>`:''}</figure>`;
     if(line.trim()==='')return'';
     return`<p>${renderInline(line)}</p>`;
   }).join('\n');
@@ -1474,7 +1477,7 @@ async function buildArticleHtml(article, allArticles){
 
   // Cover
   const coverHtml = optimizedCover
-    ? `<div class="article-cover"><img src="${optimizedCover}" alt="${article.coverAlt||article.title}" loading="lazy">${article.coverAlt?`<div class="article-cover-caption">${article.coverAlt}</div>`:''}</div>`
+    ? `<div class="article-cover"><img src="${optimizedCover}" alt="${article.coverAlt||article.title}" loading="lazy">${article.coverCaption?`<div class="article-cover-caption">${article.coverCaption}</div>`:''}</div>`
     : '';
 
   // FAQ HTML
@@ -1589,6 +1592,7 @@ async function publishArticle(){
     excerpt:document.getElementById('aExcerpt').value.trim(),
     cover:document.getElementById('aCover').value.trim(),
     coverAlt:document.getElementById('aCoverAlt').value.trim(),
+    coverCaption:document.getElementById('aCoverCaption').value.trim(),
     emoji:document.getElementById('aEmoji').value.trim()||'📝',
     body,faq:faqParsed,
     tags:document.getElementById('aTags').value.trim().split(',').map(t=>t.trim()).filter(Boolean),
@@ -1715,7 +1719,7 @@ function toggleHideDate(){
 }
 
 function clearForm(){
-  ['aTopic','aTitle','aSlug','aExcerpt','aCover','aCoverAlt','aBody','aTags','aFaq','aAuthorName','aAuthorAvatar'].forEach(id=>document.getElementById(id).value='');
+  ['aTopic','aTitle','aSlug','aExcerpt','aCover','aCoverAlt','aCoverCaption','aBody','aTags','aFaq','aAuthorName','aAuthorAvatar'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('aEmoji').value='📝';
   document.getElementById('aDate').value=new Date().toISOString().slice(0,10);
   document.getElementById('aHideDate').checked=false;
@@ -1761,6 +1765,8 @@ async function saveDraft() {
       excerpt: document.getElementById('aExcerpt').value.trim(),
       cover: document.getElementById('aCover').value.trim(),
       coverAlt: document.getElementById('aCoverAlt').value.trim(),
+    coverCaption: document.getElementById('aCoverCaption').value.trim(),
+      coverCaption: document.getElementById('aCoverCaption').value.trim(),
       emoji: document.getElementById('aEmoji').value.trim() || '📝',
       body: document.getElementById('aBody').value.trim(),
       tags: document.getElementById('aTags').value.trim().split(',').map(t => t.trim()).filter(Boolean),
@@ -1802,6 +1808,7 @@ async function saveDraftToGitHub() {
     excerpt: document.getElementById('aExcerpt').value.trim(),
     cover: document.getElementById('aCover').value.trim(),
     coverAlt: document.getElementById('aCoverAlt').value.trim(),
+    coverCaption: document.getElementById('aCoverCaption').value.trim(),
     emoji: document.getElementById('aEmoji').value.trim() || '📝',
     body, faq: faqParsed,
     tags: document.getElementById('aTags').value.trim().split(',').map(t => t.trim()).filter(Boolean),
@@ -1898,6 +1905,7 @@ function resolveDraftConflict(choice) {
     if (pendingDraft.tags) document.getElementById('aTags').value = pendingDraft.tags.join(', ');
     if (pendingDraft.cover !== undefined) document.getElementById('aCover').value = pendingDraft.cover;
     if (pendingDraft.coverAlt !== undefined) document.getElementById('aCoverAlt').value = pendingDraft.coverAlt;
+    if (pendingDraft.coverCaption !== undefined) document.getElementById('aCoverCaption').value = pendingDraft.coverCaption;
     if (pendingDraft.date) document.getElementById('aDate').value = pendingDraft.date;
     if (pendingDraft.hideDate !== undefined){ document.getElementById('aHideDate').checked=pendingDraft.hideDate; toggleHideDate(); }
     if (pendingDraft.authorName !== undefined) document.getElementById('aAuthorName').value = pendingDraft.authorName||'';
@@ -1926,6 +1934,7 @@ function editArticle(id){
   document.getElementById('aExcerpt').value=a.excerpt||'';
   document.getElementById('aCover').value=a.cover||'';
   document.getElementById('aCoverAlt').value=a.coverAlt||'';
+  document.getElementById('aCoverCaption').value=a.coverCaption||'';
   document.getElementById('aEmoji').value=a.emoji||'📝';
   document.getElementById('aDate').value=a.date||new Date().toISOString().slice(0,10);
   document.getElementById('aHideDate').checked=!!a.hideDate;
@@ -2482,7 +2491,7 @@ function updatePreview() {
   const body = document.getElementById('aBody').value;
   const prev = document.getElementById('bodyPreview');
   if (!body.trim()) { prev.innerHTML = '<span class="preview-empty">輸入內容後即時預覽</span>'; return; }
-  const imgRe = /^!\[([^\]]*)\]\(([^)]+)\)$/;
+  const imgRe = /^!\[([^\]]*)\]\(\s*(\S+?)(?:\s+"([^"]*)")?\s*\)$/;
   let globalLinkIdx = 0;
   function renderInline(text) {
     let r = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -2507,7 +2516,7 @@ function updatePreview() {
     if (line.startsWith('- ')) return `<li style="margin-left:16px">${renderInline(line.slice(2))}</li>`;
     if (line.trim() === '---') return '<hr>';
     const m = line.match(imgRe);
-    if (m) return `<figure><img src="${m[2]}" style="max-width:100%;border-radius:6px" alt="${m[1]}"><figcaption>${m[1]}</figcaption></figure>`;
+    if (m) return `<figure><img src="${m[2]}" style="max-width:100%;border-radius:6px" alt="${m[1]}">${m[3]?`<figcaption>${m[3]}</figcaption>`:(m[1]?`<figcaption style="opacity:.45">（alt：${m[1]}，前台不顯示）</figcaption>`:'')}</figure>`;
     if (line.trim() === '') return '<br>';
     return `<p>${renderInline(line)}</p>`;
   }).join('');
@@ -2553,6 +2562,7 @@ function confirmPreview() {
     closePreview();
     closePicker();
     document.getElementById('captionInput').value = '';
+    document.getElementById('captionVisibleInput').value = '';
     document.getElementById('captionModal').classList.add('on');
     setTimeout(() => document.getElementById('captionInput').focus(), 100);
   } else if (pickerTarget) {
@@ -2569,8 +2579,9 @@ function closeCaptionModal() {
 }
 
 function insertImageToBody() {
-  const caption = document.getElementById('captionInput').value.trim();
-  const tag = '\n![' + caption + '](' + pendingImgUrl + ')\n';
+  const altText = document.getElementById('captionInput').value.trim();
+  const visCap = document.getElementById('captionVisibleInput').value.trim();
+  const tag = '\n![' + altText + '](' + pendingImgUrl + (visCap ? ' "' + visCap.replace(/"/g,'\u201d') + '"' : '') + ')\n';
   const ta = document.getElementById('aBody');
   const pos = (savedCursorPos >= 0) ? savedCursorPos : ta.value.length;
   insertTextAt(ta, pos, pos, tag);
