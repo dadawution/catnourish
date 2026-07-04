@@ -249,9 +249,15 @@ textarea.out-edit:focus{border-color:var(--teal)}
           <label>構圖 <span class="en">COMPOSITION</span>　<button class="btn btn-ghost btn-sm" onclick="nextVariant()">🔀 換個變體</button></label>
           <div class="seg" id="grp-comp"></div>
         </div>
-        <div class="chip-group" style="margin-bottom:6px">
+        <div class="chip-group">
           <label>尺寸用途 <span class="en">SIZE</span></label>
           <div class="seg" id="grp-size"></div>
+        </div>
+        <div class="chip-group" style="margin-bottom:6px">
+          <label>產生張數 <span class="en">COUNT</span></label>
+          <div class="seg" id="grp-count"></div>
+          <div class="seg amber" id="grp-batchmode" style="margin-top:8px;display:none"></div>
+          <div class="hint" id="batchHint" style="display:none"></div>
         </div>
         <div id="coverReminderWrap" style="display:none;margin-top:12px">
           <div class="field" style="margin-bottom:0">
@@ -282,6 +288,7 @@ textarea.out-edit:focus{border-color:var(--teal)}
             <button class="btn btn-primary btn-sm" onclick="copyText(altBox().value,'alt')">📋 複製 alt</button>
           </div>
           <textarea class="out-edit" id="outAlt" oninput="markAltEdited();buildSkeleton()"></textarea>
+          <div class="hint" id="altHint"></div>
         </div>
 
         <div class="out-block">
@@ -408,6 +415,17 @@ const COMPS = [
   {zh:'平拍', en:'Overhead flat-lay composition, items arranged neatly from above.'}
 ];
 
+const COUNTS = [1,3,5,10];
+const ANGLES = [
+  {zh:'平視', en:'Shot at eye level with the cat.'},
+  {zh:'低角度', en:"Low angle close to the cat's eye height."},
+  {zh:'俯視', en:'Viewed from slightly above.'},
+  {zh:'側面', en:'Side profile view of the subject.'}
+];
+const BATCH_MODES = [
+  {zh:'🎰 同款抽卡', hint:'同一段描述重複生成，靠隨機性出不同結果，從中挑片。'},
+  {zh:'🎬 換拍法', hint:'每張自動換構圖與視角，主體場景不變，適合抽卡挑不出時用。'}
+];
 const SIZES = [
   {zh:'封面 / OG（橫幅）', gpt:'1536×1024', en:'Wide horizontal composition with visual breathing space at the sides.', note:'到 GPT 生圖時選 1536×1024（橫式）。此圖也會被裁成 OG 1200×630，主體請置中。', cover:true},
   {zh:'內文 figure（橫幅）', gpt:'1536×1024', en:'Balanced horizontal composition.', note:'到 GPT 生圖時選 1536×1024（橫式）。前台縮圖為 4:3 裁切，主體避免貼邊。', cover:false},
@@ -417,7 +435,7 @@ const SIZES = [
 /* ═══════════ STATE ═══════════ */
 const state = {
   mode:'manual',
-  preset:-1, comp:0, size:1,
+  preset:-1, comp:0, size:1, count:0, batchMode:0,
   sel:{subject:new Set(), action:new Set(), scene:new Set(), props:new Set(), light:new Set()},
   articlesIndex:[], articlesFull:null, currentArt:null,
   slug:'', altEdited:false
@@ -432,6 +450,8 @@ function toggleChip(group,i,single){
   if(group==='preset'){ state.preset = (state.preset===i? -1 : i); paintSeg('preset',PRESETS,state.preset); rebuild(); return; }
   if(group==='comp'){ state.comp=i; paintSeg('comp',COMPS,state.comp); rebuild(); return; }
   if(group==='size'){ state.size=i; paintSeg('size',SIZES,state.size); onSizeChange(); rebuild(); return; }
+  if(group==='count'){ state.count=i; paintSeg('count',COUNTS,state.count); onCountChange(); rebuild(); return; }
+  if(group==='batchmode'){ state.batchMode=i; paintSeg('batchmode',BATCH_MODES,state.batchMode); onCountChange(); rebuild(); return; }
   const set = state.sel[group];
   if(single){ set.clear(); set.add(i); }
   else { set.has(i) ? set.delete(i) : set.add(i); }
@@ -440,6 +460,13 @@ function toggleChip(group,i,single){
 }
 function paintSeg(group,list,active){
   document.querySelectorAll(`#grp-${group} .chip`).forEach((b,bi)=>b.classList.toggle('on',bi===active));
+}
+function onCountChange(){
+  const multi = COUNTS[state.count]>1;
+  document.getElementById('grp-batchmode').style.display = multi?'flex':'none';
+  const bh = document.getElementById('batchHint');
+  bh.style.display = multi?'block':'none';
+  if(multi) bh.textContent = BATCH_MODES[state.batchMode].hint + ' 提醒：ChatGPT 一次通常只生 1–2 張，需回覆「繼續」直到生完。';
 }
 function onSizeChange(){
   document.getElementById('coverReminderWrap').style.display = SIZES[state.size].cover ? 'block' : 'none';
@@ -452,7 +479,9 @@ function init(){
   document.getElementById('grp-preset').innerHTML = PRESETS.map((c,i)=>`<button class="chip" onclick="toggleChip('preset',${i})">${c.zh}</button>`).join('');
   document.getElementById('grp-comp').innerHTML = COMPS.map((c,i)=>`<button class="chip" onclick="toggleChip('comp',${i})">${c.zh}</button>`).join('');
   document.getElementById('grp-size').innerHTML = SIZES.map((c,i)=>`<button class="chip" onclick="toggleChip('size',${i})">${c.zh}</button>`).join('');
-  paintSeg('comp',COMPS,0); paintSeg('size',SIZES,1);
+  document.getElementById('grp-count').innerHTML = COUNTS.map((c,i)=>`<button class="chip" onclick="toggleChip('count',${i})">${c} 張</button>`).join('');
+  document.getElementById('grp-batchmode').innerHTML = BATCH_MODES.map((c,i)=>`<button class="chip" onclick="toggleChip('batchmode',${i})">${c.zh}</button>`).join('');
+  paintSeg('comp',COMPS,0); paintSeg('size',SIZES,1); paintSeg('count',COUNTS,0); paintSeg('batchmode',BATCH_MODES,0);
   loadIndex(); loadLibraryTags();
   rebuild();
 }
@@ -506,7 +535,7 @@ async function loadArticle(){
     renderSections(art.body||'', 'secList', true);
     renderAltScanner(art.body||'', 'altList');
     tools.style.display='block';
-    document.getElementById('topicCtx').value = art.title || '';
+    document.getElementById('topicCtx').value = shortenTopic(art.title);
     rebuild();
   }catch(e){ showToast('❌ 載入失敗：'+e.message); }
 }
@@ -540,7 +569,7 @@ function renderSections(body, targetId, fromArticle){
 function pickSection(btn, encTitle){
   document.querySelectorAll('.sec-item').forEach(b=>b.classList.remove('picked'));
   btn.classList.add('picked');
-  document.getElementById('topicCtx').value = decodeURIComponent(encTitle);
+  document.getElementById('topicCtx').value = shortenTopic(decodeURIComponent(encTitle));
   state.altEdited=false;
   rebuild();
   showToast('✅ 已帶入主題脈絡');
@@ -602,10 +631,17 @@ function setPasteSub(s){
 }
 
 /* ═══════════ PROMPT / ALT ASSEMBLY ═══════════ */
+/* 主題脈絡瘦身：取冒號前短句、去尾標點，過長提示手動精簡 */
+function shortenTopic(t){
+  t = (t||'').trim();
+  for(const sep of ['：',':','？','?','—','｜','|']){ const i=t.indexOf(sep); if(i>0){ t=t.slice(0,i); break; } }
+  return t.replace(/[，。！、\s]+$/,'').trim();
+}
+
 function picked(group){ return [...state.sel[group]].map(i=>CHIPS[group][i]); }
 function freeVal(group){ return document.getElementById('free-'+group)?.value.trim()||''; }
 
-function buildPrompt(){
+function buildPrompt(over){
   const subj = picked('subject').map(c=>c.en); const fs=freeVal('subject'); if(fs)subj.push(fs);
   const act  = picked('action').map(c=>c.en);  const fa=freeVal('action');  if(fa)act.push(fa);
   const scn  = picked('scene').map(c=>c.en);   const fc=freeVal('scene');   if(fc)scn.push(fc);
@@ -619,8 +655,10 @@ function buildPrompt(){
   if(scn.length) main += ', ' + scn.join(', ');
   if(prp.length) main += ', with ' + prp.join(', ');
   parts.push({t:main+'.', fixed:false});
-  if(lit.length) parts.push({t:lit.join('. ')+'.', fixed:false});
-  parts.push({t:COMPS[state.comp].en, fixed:false});
+  const litText = (over&&over.lightEn) ? over.lightEn : (lit.length? lit.join('. ') : '');
+  if(litText) parts.push({t:litText+'.', fixed:false});
+  parts.push({t:(over&&over.compEn)||COMPS[state.comp].en, fixed:false});
+  if(over&&over.angleEn) parts.push({t:over.angleEn, fixed:false});
   if(state.preset>=0) parts.push({t:PRESETS[state.preset].en, fixed:false});
   parts.push({t:SIZES[state.size].en, fixed:false});
   if(topic) parts.push({t:'This image illustrates an article about: '+topic+'.', fixed:false});
@@ -644,7 +682,7 @@ function buildAlt(coverMode){
   const action = fa || actZh.join('、');
   if(action) s += action;
   if(prpZh.length) s += '，一旁是' + prpZh.slice(0,2).join('與');
-  if(topic) s += '，呈現' + topic + '的日常情境';
+  if(topic && topic.length<=12) s += '，呈現' + topic + '的情境';
   const isCover = coverMode===undefined ? SIZES[state.size].cover : coverMode;
   if(isCover){
     const rem = document.getElementById('coverReminder').value.trim();
@@ -659,12 +697,28 @@ function slugFrag(){
   return `${base}-${compKey}` + (topic? '' : '') ;
 }
 function altBox(){ return document.getElementById('outAlt'); }
-function markAltEdited(){ state.altEdited=true; }
+function markAltEdited(){ state.altEdited=true; updateAltHint(); }
+function updateAltHint(){
+  const v = altBox().value.trim();
+  const el = document.getElementById('altHint');
+  const topic = document.getElementById('topicCtx').value.trim();
+  const warns = [];
+  if(v.length>40) warns.push('⚠️ 目前 '+v.length+' 字，建議 15–40 字內');
+  else if(v.length>0 && v.length<10) warns.push('提示：可再多描述一點畫面內容');
+  if(topic.length>12) warns.push('⚠️ 主題脈絡偏長（'+topic.length+' 字），alt 已略過它，建議改成短關鍵詞');
+  el.textContent = warns.join('　');
+  el.style.color = warns.some(w=>w.startsWith('⚠️')) ? 'var(--amber)' : 'var(--muted)';
+}
 
 function rebuild(){
   /* prompt */
-  const parts = buildPrompt();
-  document.getElementById('outPrompt').innerHTML = parts.map(p=>`<span class="layer${p.fixed?' fixed':''}">${escapeHtml(p.t)}</span>`).join('');
+  const n = COUNTS[state.count];
+  if(n===1){
+    const parts = buildPrompt();
+    document.getElementById('outPrompt').innerHTML = parts.map(p=>`<span class="layer${p.fixed?' fixed':''}">${escapeHtml(p.t)}</span>`).join('');
+  }else{
+    document.getElementById('outPrompt').textContent = buildCopyText();
+  }
   /* alt — don't clobber manual edits unless inputs changed via chips (simple rule: overwrite only when not edited) */
   if(!state.altEdited) altBox().value = buildAlt();
   buildSkeleton();
@@ -672,6 +726,7 @@ function rebuild(){
   document.getElementById('sizeNote').textContent = '📐 ' + SIZES[state.size].note;
   /* filename */
   document.getElementById('outFname').textContent = slugFrag() + '-' + String(Date.now()).slice(-5) + '.png';
+  updateAltHint();
 }
 function buildSkeleton(){
   document.getElementById('outSkeleton').textContent = `![${altBox().value.trim()}](這裡貼上傳後的Cloudinary網址)`;
@@ -685,9 +740,28 @@ function nextVariant(){
 function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 /* ═══════════ COPY + HISTORY ═══════════ */
-function promptPlain(){ return buildPrompt().map(p=>p.t).join(' '); }
+function promptPlain(over){ return buildPrompt(over).map(p=>p.t).join(' '); }
+function buildCopyText(){
+  const n = COUNTS[state.count];
+  if(n===1) return promptPlain();
+  if(state.batchMode===0){
+    return '請用以下同一段描述生成 '+n+' 張圖片。每張都使用完全相同的描述、不要改寫或增減內容，讓構圖與細節自然隨機變化，我要從中挑選：\n\n'+promptPlain();
+  }
+  const lightChosen = state.sel.light.size>0;
+  const blocks=[];
+  for(let k=0;k<n;k++){
+    const over = {
+      compEn: COMPS[k%COMPS.length].en,
+      angleEn: ANGLES[k%ANGLES.length].en,
+      lightEn: lightChosen? null : CHIPS.light[k%CHIPS.light.length].en
+    };
+    const label = '['+(k+1)+'｜'+COMPS[k%COMPS.length].zh+'・'+ANGLES[k%ANGLES.length].zh+(lightChosen?'':'・'+CHIPS.light[k%CHIPS.light.length].zh)+']';
+    blocks.push(label+'\n'+promptPlain(over));
+  }
+  return '以下共 '+n+' 組圖片描述，請依序每組各生成一張，不要改寫描述：\n\n'+blocks.join('\n\n');
+}
 function copyPrompt(){
-  const text = promptPlain();
+  const text = buildCopyText();
   navigator.clipboard.writeText(text).then(()=>{
     showToast('✅ Prompt 已複製！貼到 GPT 生圖即可');
     pushHistory(text, altBox().value.trim());
@@ -700,7 +774,7 @@ function copyText(text, label){
 function getHistory(){ try{ return JSON.parse(localStorage.getItem(LS.hist)||'[]'); }catch(e){ return []; } }
 function pushHistory(prompt, alt){
   const h = getHistory();
-  h.unshift({ ts:new Date().toLocaleString('zh-TW'), slug:state.slug||'', topic:document.getElementById('topicCtx').value.trim(), prompt, alt });
+  h.unshift({ ts:new Date().toLocaleString('zh-TW'), slug:state.slug||'', topic:(COUNTS[state.count]>1?'['+COUNTS[state.count]+'張] ':'')+document.getElementById('topicCtx').value.trim(), prompt, alt });
   localStorage.setItem(LS.hist, JSON.stringify(h.slice(0,30)));
 }
 function openHistory(){
